@@ -10,6 +10,7 @@ import { upcomingDues } from '../access';
 const FINANCE_LINKS = [
   { to: '/finances/budget', label: 'Budget' },
   { to: '/finances/epargne', label: 'Épargne' },
+  { to: '/finances/patrimoine', label: 'Patrimoine' },
   { to: '/finances/tontines', label: 'Tontines' },
   { to: '/finances/assurances', label: 'Assurances' },
 ];
@@ -152,7 +153,7 @@ function titleFor(pathname: string, people: { id: string; firstName: string; las
   }
   if (pathname.startsWith('/famille')) return { title: 'Ma famille', sub: 'Les membres de votre foyer et leurs accès' };
   if (pathname.startsWith('/calendrier')) return { title: 'Calendrier partagé', sub: 'Une couleur par membre' };
-  if (pathname.startsWith('/finances')) return { title: 'Finances', sub: 'Budget, épargne, tontines et assurances' };
+  if (pathname.startsWith('/finances')) return { title: 'Finances', sub: 'Budget, épargne, patrimoine, tontines et assurances' };
   if (pathname.startsWith('/documents')) return { title: 'Documents familiaux', sub: 'Factures, scolarité, assurances et autorisations' };
   if (pathname.startsWith('/parametres')) return { title: 'Paramètres', sub: 'Comptes, accès et rappels' };
   return { title: 'Tableau de bord', sub: 'Votre famille, vos priorités, en un coup d’œil' };

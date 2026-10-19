@@ -251,6 +251,8 @@ public sealed class FamilyDb
             Goals = Load<Goal>(db, "goal"),
             Tontines = Load<Tontine>(db, "tontine"),
             Policies = Load<Policy>(db, "policy"),
+            Investments = Load<Investment>(db, "investment"),
+            Assets = Load<Asset>(db, "asset"),
             Documents = Load<DocItem>(db, "document"),
             Tasks = Load<FamTask>(db, "task"),
             Requests = Load<ChildRequest>(db, "request"),

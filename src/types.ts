@@ -154,6 +154,39 @@ export type Policy = {
   documentId?: string;
 };
 
+export type InvestmentType = 'reer' | 'celi' | 'actions' | 'obligations' | 'fonds' | 'crypto' | 'compte' | 'autre';
+
+export type Investment = {
+  id: string;
+  label: string;
+  type: InvestmentType;
+  institution: string;
+  accountRef: string;
+  ownerId: string;
+  investedAmount: number;
+  currentValue: number;
+  acquiredDate: string;
+  expectedYield: string;
+  notes: string;
+};
+
+export type AssetType = 'immobilier' | 'terrain' | 'vehicule' | 'entreprise' | 'objet' | 'autre';
+
+export type Asset = {
+  id: string;
+  label: string;
+  type: AssetType;
+  description: string;
+  ownerId: string;
+  coOwnerId: string;
+  estimatedValue: number;
+  purchaseValue: number;
+  acquiredDate: string;
+  location: string;
+  sharePercent: number;
+  notes: string;
+};
+
 export type DocCategory = 'facture' | 'scolaire' | 'assurance' | 'medical' | 'autorisation' | 'autre';
 
 export type DocItem = {
@@ -200,6 +233,8 @@ export type AppState = {
   goals: Goal[];
   tontines: Tontine[];
   policies: Policy[];
+  investments: Investment[];
+  assets: Asset[];
   documents: DocItem[];
   tasks: Task[];
   requests: ChildRequest[];

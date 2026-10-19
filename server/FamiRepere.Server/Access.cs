@@ -22,6 +22,8 @@ public static class Access
         state.Goals = full.Goals.Where(g => CanSeeGoal(viewer, g)).Select(g => HideContributors(viewer, g)).ToList();
         state.Policies = full.Policies.Where(p => CanSeePolicy(viewer, p)).Select(p => HidePolicy(viewer, p)).ToList();
         state.Incomes = viewer.Role == "parent" ? full.Incomes : [];
+        state.Investments = viewer.Role == "parent" ? full.Investments : [];
+        state.Assets = viewer.Role == "parent" ? full.Assets : [];
         state.Activities = full.Activities.Where(a => CanSeeActivity(viewer, a)).ToList();
         state.Tontines = viewer.Role == "parent" ? full.Tontines : [];
         if (viewer.Role != "parent")
@@ -47,6 +49,7 @@ public static class Access
             Soft = person.Soft,
             Household = person.Household,
             IsSuperAdmin = person.IsSuperAdmin,
+            Avatar = person.Avatar,
             MaskNotifications = person.Id == viewer.Id && person.MaskNotifications,
             Username = viewer.IsSuperAdmin || viewer.Id == person.Id ? person.Username : "",
         };

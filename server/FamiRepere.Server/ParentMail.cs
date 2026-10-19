@@ -111,6 +111,8 @@ public static class ParentNotices
         FamTask t => ("Tâche", $"{t.Title}\n{t.Due}".Trim()),
         DocItem d => ("Document", d.Title),
         Income i => ("Revenu", $"{i.Label}\n{i.Amount:0.##} $ · {IncomeKind(i.Kind)} · {IncomeFreq(i.Frequency)} · {Label(i.Status)}"),
+        Investment i => ("Investissement", $"{i.Label}\n{i.Type} · {i.Institution}\nValeur {i.CurrentValue:0.##} $ · investi {i.InvestedAmount:0.##} $"),
+        Asset a => ("Patrimoine", $"{a.Label}\n{a.Type} · valeur {a.EstimatedValue:0.##} $\n{a.Location}".Trim()),
         Tontine t => ("Tontine", t.Name),
         Policy p => ("Assurance", $"{p.Type}\nPrime le {p.PremiumDueDate}".Trim()),
         ActivityBundle b => ("Activité", b.Activity.Name),

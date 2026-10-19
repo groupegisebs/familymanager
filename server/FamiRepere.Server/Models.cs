@@ -146,6 +146,37 @@ public sealed class Policy
     public string? DocumentId { get; set; }
 }
 
+public sealed class Investment
+{
+    public string Id { get; set; } = "";
+    public string Label { get; set; } = "";
+    public string Type { get; set; } = "autre";
+    public string Institution { get; set; } = "";
+    public string AccountRef { get; set; } = "";
+    public string OwnerId { get; set; } = "";
+    public decimal InvestedAmount { get; set; }
+    public decimal CurrentValue { get; set; }
+    public string AcquiredDate { get; set; } = "";
+    public string ExpectedYield { get; set; } = "";
+    public string Notes { get; set; } = "";
+}
+
+public sealed class Asset
+{
+    public string Id { get; set; } = "";
+    public string Label { get; set; } = "";
+    public string Type { get; set; } = "autre";
+    public string Description { get; set; } = "";
+    public string OwnerId { get; set; } = "";
+    public string CoOwnerId { get; set; } = "";
+    public decimal EstimatedValue { get; set; }
+    public decimal PurchaseValue { get; set; }
+    public string AcquiredDate { get; set; } = "";
+    public string Location { get; set; } = "";
+    public decimal SharePercent { get; set; } = 100;
+    public string Notes { get; set; } = "";
+}
+
 public sealed class DocItem
 {
     public string Id { get; set; } = "";
@@ -205,6 +236,8 @@ public sealed class AppState
     public List<Goal> Goals { get; set; } = [];
     public List<Tontine> Tontines { get; set; } = [];
     public List<Policy> Policies { get; set; } = [];
+    public List<Investment> Investments { get; set; } = [];
+    public List<Asset> Assets { get; set; } = [];
     public List<DocItem> Documents { get; set; } = [];
     public List<FamTask> Tasks { get; set; } = [];
     public List<ChildRequest> Requests { get; set; } = [];

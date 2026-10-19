@@ -270,6 +270,35 @@ app.MapPost("/api/incomes", (HttpContext ctx, Income item) =>
 });
 app.MapPost("/api/tontines", (HttpContext ctx, Tontine item) => Save(ctx, "tontine", item.Id, item));
 app.MapPost("/api/policies", (HttpContext ctx, Policy item) => Save(ctx, "policy", item.Id, item));
+app.MapPost("/api/investments", (HttpContext ctx, Investment item) =>
+{
+    if (string.IsNullOrWhiteSpace(item.Label)) throw new InvalidOperation("Indiquez le libellé de l’investissement.");
+    if (item.Type is not ("reer" or "celi" or "actions" or "obligations" or "fonds" or "crypto" or "compte" or "autre"))
+        throw new InvalidOperation("Type d’investissement inconnu.");
+    if (string.IsNullOrWhiteSpace(item.OwnerId)) throw new InvalidOperation("Indiquez le parent propriétaire.");
+    if (item.CurrentValue < 0 || item.InvestedAmount < 0) throw new InvalidOperation("Les montants ne peuvent pas être négatifs.");
+    item.Label = item.Label.Trim();
+    item.Institution = item.Institution?.Trim() ?? "";
+    item.AccountRef = item.AccountRef?.Trim() ?? "";
+    item.ExpectedYield = item.ExpectedYield?.Trim() ?? "";
+    item.Notes = item.Notes?.Trim() ?? "";
+    return Save(ctx, "investment", item.Id, item);
+});
+app.MapPost("/api/assets", (HttpContext ctx, Asset item) =>
+{
+    if (string.IsNullOrWhiteSpace(item.Label)) throw new InvalidOperation("Indiquez le bien patrimonial.");
+    if (item.Type is not ("immobilier" or "terrain" or "vehicule" or "entreprise" or "objet" or "autre"))
+        throw new InvalidOperation("Type de bien inconnu.");
+    if (string.IsNullOrWhiteSpace(item.OwnerId)) throw new InvalidOperation("Indiquez le parent propriétaire.");
+    if (item.EstimatedValue < 0 || item.PurchaseValue < 0) throw new InvalidOperation("Les montants ne peuvent pas être négatifs.");
+    if (item.SharePercent is < 0 or > 100) throw new InvalidOperation("La part doit être entre 0 et 100 %.");
+    item.Label = item.Label.Trim();
+    item.Description = item.Description?.Trim() ?? "";
+    item.CoOwnerId = item.CoOwnerId?.Trim() ?? "";
+    item.Location = item.Location?.Trim() ?? "";
+    item.Notes = item.Notes?.Trim() ?? "";
+    return Save(ctx, "asset", item.Id, item);
+});
 
 app.MapPost("/api/budgets", (HttpContext ctx, CategoryLimits limits) =>
 {

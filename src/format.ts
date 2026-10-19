@@ -1,4 +1,4 @@
-import type { ExpenseCategory, IncomeFrequency, IncomeKind, PayStatus, Person, SavingsKind } from './types';
+import type { AssetType, ExpenseCategory, IncomeFrequency, IncomeKind, InvestmentType, PayStatus, Person, SavingsKind } from './types';
 
 export const INCOME_KIND_LABEL: Record<IncomeKind, string> = {
   brut: 'Brut',
@@ -79,6 +79,26 @@ export function nextTontineDue(from = todayISO()) {
 }
 
 export const TONTINE_FREQUENCY = 'chaque dernier dimanche du mois';
+
+export const INVESTMENT_TYPE_LABEL: Record<InvestmentType, string> = {
+  reer: 'REER',
+  celi: 'CELI',
+  actions: 'Actions',
+  obligations: 'Obligations',
+  fonds: 'Fonds / FNB',
+  crypto: 'Crypto',
+  compte: 'Compte de placement',
+  autre: 'Autre',
+};
+
+export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
+  immobilier: 'Immobilier',
+  terrain: 'Terrain',
+  vehicule: 'Véhicule',
+  entreprise: 'Entreprise',
+  objet: 'Objet de valeur',
+  autre: 'Autre',
+};
 
 export const WEEKDAYS_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 

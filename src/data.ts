@@ -21,6 +21,8 @@ export function createEmpty(): AppState {
     goals: [],
     tontines: [],
     policies: [],
+    investments: [],
+    assets: [],
     documents: [],
     tasks: [],
     requests: [],

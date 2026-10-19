@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { ActivityBundle, AppState, CalEvent, CategoryLimits, ChildNote, ChildRequest, DocItem, DueRef, Expense, Goal, Income, Policy, Task, Tontine } from './types';
+import type { ActivityBundle, AppState, Asset, CalEvent, CategoryLimits, ChildNote, ChildRequest, DocItem, DueRef, Expense, Goal, Income, Investment, Policy, Task, Tontine } from './types';
 
 type Phase = 'loading' | 'setup' | 'login' | 'ready';
 
@@ -44,6 +44,8 @@ type Store = {
   addIncome: (income: Income) => Promise<void>;
   addTontine: (tontine: Tontine) => Promise<void>;
   addPolicy: (policy: Policy) => Promise<void>;
+  addInvestment: (investment: Investment) => Promise<void>;
+  addAsset: (asset: Asset) => Promise<void>;
   saveBudgets: (limits: CategoryLimits) => Promise<void>;
 };
 
@@ -147,6 +149,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addIncome: (income) => run('/api/incomes', income),
     addTontine: (tontine) => run('/api/tontines', tontine),
     addPolicy: (policy) => run('/api/policies', policy),
+    addInvestment: (investment) => run('/api/investments', investment),
+    addAsset: (asset) => run('/api/assets', asset),
     saveBudgets: (limits) => run('/api/budgets', limits),
   };
 
