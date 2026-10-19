@@ -1,0 +1,16 @@
+[Unit]
+Description=FamiRepère
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=__APP_ROOT__/app
+ExecStart=/usr/bin/dotnet __APP_ROOT__/app/FamiRepere.Server.dll
+Restart=always
+RestartSec=5
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:__LISTEN_PORT__
+Environment=ConnectionStrings__Sqlite=Data Source=__APP_ROOT__/data/famirepere.db
+
+[Install]
+WantedBy=multi-user.target

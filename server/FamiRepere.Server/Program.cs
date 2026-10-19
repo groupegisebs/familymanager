@@ -103,7 +103,7 @@ app.MapPost("/api/incomes", (HttpContext ctx, Income item) => Save(ctx, "income"
 app.MapPost("/api/tontines", (HttpContext ctx, Tontine item) => Save(ctx, "tontine", item.Id, item));
 app.MapPost("/api/policies", (HttpContext ctx, Policy item) => Save(ctx, "policy", item.Id, item));
 
-app.MapPut("/api/budgets", (HttpContext ctx, CategoryLimits limits) =>
+app.MapPost("/api/budgets", (HttpContext ctx, CategoryLimits limits) =>
 {
     var person = Parent(ctx);
     if (limits.Logement < 0 || limits.Alimentation < 0 || limits.Enfants < 0 || limits.Transport < 0 || limits.Sante < 0 || limits.Loisirs < 0)

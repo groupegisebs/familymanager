@@ -4,13 +4,15 @@ import type { PayStatus, Person } from '../types';
 
 export function useFamily() {
   const app = useApp();
-  const viewer = app.state.people.find((p) => p.id === app.state.viewerId) ?? app.state.people[0];
-  const byId = (id?: string) => app.state.people.find((p) => p.id === id);
+  if (!app.state) throw new Error('Session absente');
+  const state = app.state;
+  const viewer = state.people.find((p) => p.id === state.viewerId) ?? state.people[0];
+  const byId = (id?: string) => state.people.find((p) => p.id === id);
   const name = (id?: string) => {
     const person = byId(id);
     return person ? fullName(person) : '';
   };
-  return { ...app, viewer, byId, name };
+  return { ...app, state, viewer, byId, name };
 }
 
 export function StatusPill({ status }: { status: PayStatus }) {

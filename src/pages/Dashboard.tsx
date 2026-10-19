@@ -9,7 +9,7 @@ import {
   household,
   upcomingDues,
 } from '../access';
-import { BUDGETS, MONTHLY_BUDGET } from '../data';
+import { BUDGET_CATEGORIES } from '../data';
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
@@ -52,8 +52,9 @@ function ParentHome() {
   const tasks = state.tasks.filter((task) => task.due === today).sort((a, b) => a.title.localeCompare(b.title));
   const dues = upcomingDues(state, today).slice(0, 4);
   const tontine = state.tontines[0];
-  const nextTurn = tontine.participants.find((p) => !p.received);
-  const nextPay = tontine.payments.find((p) => p.memberId && p.status !== 'confirme');
+  const nextTurn = tontine?.participants.find((p) => !p.received);
+  const nextPay = tontine?.payments.find((p) => p.memberId && p.status !== 'confirme');
+  const budgetRows = BUDGET_CATEGORIES.map((category) => ({ category, limit: state.categoryLimits[category] }));
   const goals = state.goals;
   const attention = attentionPolicies(state.policies, name);
 
@@ -111,10 +112,10 @@ function ParentHome() {
                 <span>Dépenses du mois</span>
                 <Icon name="chevron" size={16} />
               </div>
-              <p className="stat-main"><strong>{money(spent)}</strong> <span>/ {money(MONTHLY_BUDGET)}</span></p>
+              <p className="stat-main"><strong>{money(spent)}</strong> <span>/ {money(state.monthlyBudget)}</span></p>
               <div className="bar-row">
-                <div className="bar"><span style={{ width: `${pct(spent, MONTHLY_BUDGET)}%` }} /></div>
-                <em>{pct(spent, MONTHLY_BUDGET)}%</em>
+                <div className="bar"><span style={{ width: `${pct(spent, state.monthlyBudget)}%` }} /></div>
+                <em>{pct(spent, state.monthlyBudget)}%</em>
               </div>
             </Link>
             <Link to="/finances/epargne" className="stat">
@@ -138,7 +139,7 @@ function ParentHome() {
                 <span>Tontine · prochaine cotisation</span>
                 <Icon name="chevron" size={16} />
               </div>
-              <p className="stat-main"><strong className="num-rose">{money(tontine.amount)}</strong> <span>· {nextPay ? formatDayMonth(nextPay.dueDate) : 'à jour'}</span></p>
+              <p className="stat-main"><strong className="num-rose">{tontine ? money(tontine.amount) : '—'}</strong> <span>· {nextPay ? formatDayMonth(nextPay.dueDate) : 'aucune'}</span></p>
             </Link>
           </section>
 
@@ -201,7 +202,7 @@ function ParentHome() {
                 <span className="month-pill">Ce mois-ci</span>
               </header>
               <div className="cats">
-                {BUDGETS.slice(0, 4).map((row) => {
+                {budgetRows.slice(0, 4).map((row) => {
                   const value = state.expenses
                     .filter((e) => e.category === row.category && e.status === 'confirme' && monthKey(e.date) === month)
                     .reduce((t, e) => t + e.amount, 0);
@@ -223,12 +224,16 @@ function ParentHome() {
                 <Link to="/finances/tontines">Voir les détails</Link>
               </header>
               <div className="tontine-body">
-                <div className="tontine-art" aria-hidden="true"><Icon name="users" size={28} /></div>
-                <dl>
-                  <div><dt>Participant</dt><dd>{nextTurn?.name}</dd></div>
-                  <div><dt>Cotisation</dt><dd>{money(tontine.amount)} / {tontine.frequency}</dd></div>
-                  <div><dt>Prochain tour</dt><dd>{nextTurn ? formatDayMonth(nextTurn.receptionDate) : '—'}</dd></div>
-                </dl>
+                {tontine ? (
+                  <>
+                    <div className="tontine-art" aria-hidden="true"><Icon name="users" size={28} /></div>
+                    <dl>
+                      <div><dt>Participant</dt><dd>{nextTurn?.name ?? '—'}</dd></div>
+                      <div><dt>Cotisation</dt><dd>{money(tontine.amount)} / {tontine.frequency}</dd></div>
+                      <div><dt>Prochain tour</dt><dd>{nextTurn ? formatDayMonth(nextTurn.receptionDate) : '—'}</dd></div>
+                    </dl>
+                  </>
+                ) : <p className="empty">Aucune tontine enregistrée.</p>}
               </div>
             </article>
             <article className="card">
@@ -339,10 +344,10 @@ function EventRow({ event, who, companion }: { event: CalEvent; who: string; com
 }
 
 function TaskRow({ id, title, done, who }: { id: string; title: string; done: boolean; who: string }) {
-  const { dispatch } = useFamily();
+  const { toggleTask } = useFamily();
   return (
     <label className={done ? 'task done' : 'task'}>
-      <input type="checkbox" checked={done} onChange={() => dispatch({ type: 'toggle-task', id })} />
+      <input type="checkbox" checked={done} onChange={() => void toggleTask(id)} />
       <span>
         <strong>{title}</strong>
         <small>{who}</small>

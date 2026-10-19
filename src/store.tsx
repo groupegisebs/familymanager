@@ -1,128 +1,105 @@
-import { createContext, useContext, useEffect, useReducer, type Dispatch, type ReactNode } from 'react';
-import { createEmpty } from './data';
-import { nextStatus } from './format';
-import type { ActivityBundle, AppState, CalEvent, DocItem, DueRef, Expense, ExpenseCategory, Goal, Person, Task } from './types';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { ActivityBundle, AppState, CalEvent, CategoryLimits, DocItem, DueRef, Expense, Goal, Income, Policy, Task, Tontine } from './types';
 
-const KEY = 'famirepere.v2';
+type Phase = 'loading' | 'setup' | 'login' | 'ready';
 
-type Action =
-  | { type: 'set-viewer'; id: string }
-  | { type: 'toggle-mask' }
-  | { type: 'reset' }
-  | { type: 'add-person'; person: Person }
-  | { type: 'set-monthly-budget'; amount: number }
-  | { type: 'set-category-limit'; category: ExpenseCategory; amount: number }
-  | { type: 'toggle-task'; id: string }
-  | { type: 'advance'; ref: DueRef }
-  | { type: 'add-activity'; bundle: ActivityBundle }
-  | { type: 'add-event'; event: CalEvent }
-  | { type: 'add-expense'; expense: Expense }
-  | { type: 'add-goal'; goal: Goal }
-  | { type: 'add-task'; task: Task }
-  | { type: 'add-document'; document: DocItem };
-
-function bump<T extends { id: string; status: AppState['expenses'][number]['status'] }>(items: T[], id: string): T[] {
-  return items.map((item) => {
-    if (item.id !== id) return item;
-    const status = nextStatus(item.status);
-    return status ? { ...item, status } : item;
-  });
-}
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'set-viewer':
-      return { ...state, viewerId: action.id };
-    case 'toggle-mask':
-      return { ...state, maskNotifications: !state.maskNotifications };
-    case 'reset':
-      return createSeed();
-    case 'toggle-task':
-      return { ...state, tasks: state.tasks.map((t) => (t.id === action.id ? { ...t, done: !t.done } : t)) };
-    case 'advance': {
-      const ref = action.ref;
-      if (ref.kind === 'expense') return { ...state, expenses: bump(state.expenses, ref.id) };
-      if (ref.kind === 'policy') {
-        return {
-          ...state,
-          policies: state.policies.map((p) => {
-            if (p.id !== ref.id) return p;
-            const premiumStatus = nextStatus(p.premiumStatus);
-            return premiumStatus ? { ...p, premiumStatus } : p;
-          }),
-        };
-      }
-      if (ref.kind === 'tontine') {
-        return {
-          ...state,
-          tontines: state.tontines.map((t) =>
-            t.id !== ref.tontineId
-              ? t
-              : { ...t, payments: bump(t.payments, ref.paymentId) },
-          ),
-        };
-      }
-      return {
-        ...state,
-        goals: state.goals.map((g) =>
-          g.id !== ref.goalId ? g : { ...g, moves: bump(g.moves, ref.moveId) },
-        ),
-      };
-    }
-    case 'add-activity':
-      return {
-        ...state,
-        activities: [...state.activities, action.bundle.activity],
-        events: [...state.events, ...action.bundle.events],
-        expenses: action.bundle.expense ? [...state.expenses, action.bundle.expense] : state.expenses,
-        tasks: action.bundle.task ? [...state.tasks, action.bundle.task] : state.tasks,
-      };
-    case 'add-event':
-      return { ...state, events: [...state.events, action.event] };
-    case 'add-expense':
-      return { ...state, expenses: [...state.expenses, action.expense] };
-    case 'add-goal':
-      return { ...state, goals: [...state.goals, action.goal] };
-    case 'add-task':
-      return { ...state, tasks: [...state.tasks, action.task] };
-    case 'add-document':
-      return { ...state, documents: [...state.documents, action.document] };
-    default:
-      return state;
-  }
-}
-
-function load(): AppState {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return createSeed();
-    const parsed = JSON.parse(raw) as { version?: number; state?: AppState };
-    if (parsed.version !== 1 || !parsed.state?.people) return createSeed();
-    return parsed.state;
-  } catch {
-    return createSeed();
-  }
-}
+type MemberInput = {
+  firstName: string;
+  lastName: string;
+  age: number;
+  gender: 'f' | 'm';
+  role: 'parent' | 'enfant' | 'proche';
+  relation: string;
+  username: string;
+  password: string;
+};
 
 type Store = {
-  state: AppState;
-  dispatch: Dispatch<Action>;
+  phase: Phase;
+  state: AppState | null;
+  error: string;
   addOpen: boolean;
   setAddOpen: (open: boolean) => void;
   toast: string;
   notify: (message: string) => void;
+  setup: (body: { firstName: string; lastName: string; age: number; username: string; password: string }) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  createMember: (body: MemberInput) => Promise<void>;
+  toggleMask: () => Promise<void>;
+  toggleTask: (id: string) => Promise<void>;
+  advance: (ref: DueRef) => Promise<void>;
+  addActivity: (bundle: ActivityBundle) => Promise<void>;
+  addEvent: (event: CalEvent) => Promise<void>;
+  addExpense: (expense: Expense) => Promise<void>;
+  addGoal: (goal: Goal) => Promise<void>;
+  addTask: (task: Task) => Promise<void>;
+  addDocument: (document: DocItem) => Promise<void>;
+  addIncome: (income: Income) => Promise<void>;
+  addTontine: (tontine: Tontine) => Promise<void>;
+  addPolicy: (policy: Policy) => Promise<void>;
+  saveBudgets: (limits: CategoryLimits) => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
 
+async function request(path: string, body?: unknown): Promise<AppState | null> {
+  const res = await fetch(path, {
+    method: body === undefined && path.endsWith('/session') ? 'GET' : 'POST',
+    credentials: 'include',
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (res.status === 401) return null;
+  const text = await res.text();
+  const data = text ? JSON.parse(text) as { error?: string } & AppState : null;
+  if (!res.ok) throw new Error(data?.error || 'La requête a échoué.');
+  return data && data.people ? data : null;
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, load);
-  const [addOpen, setAddOpen] = useReducer((_: boolean, next: boolean) => next, false);
-  const [toast, setToast] = useReducer((_: string, next: string) => next, '');
+  const [phase, setPhase] = useState<Phase>('loading');
+  const [state, setState] = useState<AppState | null>(null);
+  const [error, setError] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function accept(next: AppState | null) {
+    setState(next);
+    setPhase(next ? 'ready' : 'login');
+    setError('');
+  }
+
+  async function run(path: string, body?: unknown) {
+    const next = await request(path, body);
+    if (!next) {
+      setState(null);
+      setPhase('login');
+      throw new Error('La session a expiré.');
+    }
+    accept(next);
+  }
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify({ version: 1, state }));
-  }, [state]);
+    let live = true;
+    (async () => {
+      const session = await request('/api/session');
+      if (!live) return;
+      if (session) {
+        accept(session);
+        return;
+      }
+      const status = await fetch('/api/setup/status').then((r) => r.json()) as { needsSetup: boolean };
+      if (!live) return;
+      setPhase(status.needsSetup ? 'setup' : 'login');
+    })().catch(() => {
+      if (live) {
+        setError('Le serveur est injoignable.');
+        setPhase('login');
+      }
+    });
+    return () => { live = false; };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -130,9 +107,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(id);
   }, [toast]);
 
-  const notify = (message: string) => setToast(message);
+  const store: Store = {
+    phase,
+    state,
+    error,
+    addOpen,
+    setAddOpen,
+    toast,
+    notify: setToast,
+    setup: async (body) => accept(await request('/api/setup', body)),
+    login: async (username, password) => accept(await request('/api/login', { username, password })),
+    logout: async () => {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      setState(null);
+      setPhase('login');
+    },
+    createMember: (body) => run('/api/members', body),
+    toggleMask: () => run('/api/settings/mask', {}),
+    toggleTask: (id) => run(`/api/tasks/${id}/toggle`, {}),
+    advance: (ref) => run('/api/payments/advance', ref),
+    addActivity: (bundle) => run('/api/activities', bundle),
+    addEvent: (event) => run('/api/events', event),
+    addExpense: (expense) => run('/api/expenses', expense),
+    addGoal: (goal) => run('/api/goals', goal),
+    addTask: (task) => run('/api/tasks', task),
+    addDocument: (document) => run('/api/documents', document),
+    addIncome: (income) => run('/api/incomes', income),
+    addTontine: (tontine) => run('/api/tontines', tontine),
+    addPolicy: (policy) => run('/api/policies', policy),
+    saveBudgets: (limits) => run('/api/budgets', limits),
+  };
 
-  return <Ctx.Provider value={{ state, dispatch, addOpen, setAddOpen, toast, notify }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }
 
 export function useApp() {

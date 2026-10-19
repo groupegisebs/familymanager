@@ -14,8 +14,10 @@ const LOOKS: Record<string, Look> = {
   camille: { skin: '#efc3a6', hair: '#d9d3cc', shirt: '#8ed1b0', kind: 'camille' },
 };
 
+const LOOK_LIST = Object.values(LOOKS);
+
 export function Avatar({ id, size = 52 }: { id: string; size?: number }) {
-  const look = LOOKS[id] ?? LOOKS.thomas;
+  const look = LOOKS[id] ?? LOOK_LIST[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % LOOK_LIST.length];
   return (
     <svg className="avatar" width={size} height={size} viewBox="0 0 80 80" aria-hidden="true">
       <circle cx="40" cy="40" r="40" fill="#fff" />

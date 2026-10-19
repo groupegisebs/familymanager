@@ -14,6 +14,8 @@ export type Person = {
   color: string;
   soft: string;
   household: boolean;
+  isSuperAdmin: boolean;
+  username: string;
 };
 
 export type Income = {
@@ -181,8 +183,10 @@ export type AppState = {
   viewerId: string;
   maskNotifications: boolean;
   monthlyBudget: number;
-  categoryLimits: Record<'logement' | 'alimentation' | 'enfants' | 'transport' | 'sante' | 'loisirs', number>;
+  categoryLimits: CategoryLimits;
 };
+
+export type CategoryLimits = Record<'logement' | 'alimentation' | 'enfants' | 'transport' | 'sante' | 'loisirs', number>;
 
 export type DueRef =
   | { kind: 'expense'; id: string }

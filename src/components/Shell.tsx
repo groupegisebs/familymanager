@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { fullName } from '../format';
 import { useFamily } from './ui';
@@ -18,13 +18,11 @@ const NAV: { to: string; label: string; icon: IconName; match: (path: string) =>
 export function Shell() {
   const { pathname } = useLocation();
   const { state, viewer, setAddOpen, toast } = useFamily();
-  const [whoOpen, setWhoOpen] = useState(false);
   const heading = titleFor(pathname, state.people);
 
   useEffect(() => {
     document.title = `${heading.title} — FamiRepère`;
     document.querySelector('.content')?.scrollTo(0, 0);
-    setWhoOpen(false);
   }, [pathname, heading.title]);
 
   return (
@@ -49,20 +47,13 @@ export function Shell() {
         </nav>
         <div className="side-spacer" />
         <div className="who-wrap">
-          {whoOpen && (
-            <div className="who-pop" role="menu">
-              {state.people.map((person) => (
-                <WhoChoice key={person.id} id={person.id} current={viewer.id} onDone={() => setWhoOpen(false)} />
-              ))}
-            </div>
-          )}
-          <button className="who" type="button" onClick={() => setWhoOpen((v) => !v)} aria-expanded={whoOpen}>
+          <div className="who">
             <Avatar id={viewer.id} size={36} />
             <span>
               <strong>{fullName(viewer)}</strong>
-              <small>{viewer.role === 'parent' ? 'Parent' : viewer.role === 'enfant' ? 'Enfant' : 'Proche autorisé'}</small>
+              <small>{viewer.isSuperAdmin ? 'Père · super administrateur' : viewer.role === 'parent' ? 'Parent' : viewer.role === 'enfant' ? 'Enfant' : 'Proche autorisé'}</small>
             </span>
-          </button>
+          </div>
         </div>
         <div className="side-art" aria-hidden="true">
           <svg viewBox="0 0 220 110" width="180" height="90">
@@ -90,10 +81,6 @@ export function Shell() {
             <p>{heading.sub}</p>
           </div>
           <div className="actions">
-            <span className="demo">
-              <Icon name="info" size={16} />
-              Données de démonstration
-            </span>
             {viewer.role === 'parent' && (
               <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" size={18} />
@@ -109,27 +96,6 @@ export function Shell() {
       <AddDialog />
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
-  );
-}
-
-function WhoChoice({ id, current, onDone }: { id: string; current: string; onDone: () => void }) {
-  const { state, dispatch } = useFamily();
-  const person = state.people.find((p) => p.id === id)!;
-  return (
-    <button
-      type="button"
-      className={person.id === current ? 'who-item on' : 'who-item'}
-      onClick={() => {
-        dispatch({ type: 'set-viewer', id: person.id });
-        onDone();
-      }}
-    >
-      <Avatar id={person.id} size={32} />
-      <span>
-        <strong>{fullName(person)}</strong>
-        <small>{person.relation}</small>
-      </span>
-    </button>
   );
 }
 

@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
+import { useApp } from './store';
+import { LoginPage, SetupPage } from './pages/AuthPages';
 import { Dashboard } from './pages/Dashboard';
 import { FamilyPage } from './pages/Family';
 import { MemberPage } from './pages/MemberPage';
@@ -9,6 +11,10 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 export function AppRoutes() {
+  const { phase } = useApp();
+  if (phase === 'loading') return <main className="auth"><p className="card auth-card">Chargement…</p></main>;
+  if (phase === 'setup') return <SetupPage />;
+  if (phase === 'login') return <LoginPage />;
   return (
     <Routes>
       <Route element={<Shell />}>

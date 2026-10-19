@@ -1,7 +1,8 @@
+import { useState, type FormEvent } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { canSeeExpense, canSeeGoal, canSeePolicy, canSeePolicyDetails, goalByStatus, goalConfirmed, monthFlow } from '../access';
-import { BUDGETS, DEMO_MONTH } from '../data';
-import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, pct } from '../format';
+import { BUDGET_CATEGORIES } from '../data';
+import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, pct, todayISO } from '../format';
 import type { PayStatus } from '../types';
 import { StatusPill, useFamily } from '../components/ui';
 
@@ -26,8 +27,9 @@ export function Finances() {
 }
 
 function BudgetPane() {
-  const { state, name, dispatch } = useFamily();
-  const flow = monthFlow(state, DEMO_MONTH);
+  const { state, name, advance } = useFamily();
+  const month = monthKey(todayISO());
+  const flow = monthFlow(state, month);
   return (
     <div className="stack">
       <section className="summary">
@@ -39,6 +41,7 @@ function BudgetPane() {
       <p className="hint">Le disponible retire les dépenses confirmées et tout ce qui est déjà prévu ou seulement déclaré : épargne du mois, cotisations et primes. Confirmer un paiement ne libère pas d’argent, il le fait entrer dans le réalisé.</p>
       <section className="card">
         <header className="card-head"><h2>Revenus</h2></header>
+        {state.incomes.length === 0 && <p className="empty">Aucun revenu enregistré.</p>}
         {state.incomes.map((income) => (
           <article key={income.id} className="item">
             <div className="between">
@@ -48,12 +51,15 @@ function BudgetPane() {
             <p>Perçu par {name(income.memberId)} · {formatDayMonth(income.date)}</p>
           </article>
         ))}
+        <IncomeForm />
       </section>
       <section className="card">
         <header className="card-head"><h2>Budgets du mois</h2></header>
         <div className="cats">
-          {BUDGETS.map((row) => {
-            const value = state.expenses.filter((e) => e.category === row.category && e.status === 'confirme' && monthKey(e.date) === DEMO_MONTH).reduce((t, e) => t + e.amount, 0);
+          {BUDGET_CATEGORIES.map((category) => {
+            const limit = state.categoryLimits[category];
+            const value = state.expenses.filter((e) => e.category === category && e.status === 'confirme' && monthKey(e.date) === month).reduce((t, e) => t + e.amount, 0);
+            const row = { category, limit };
             return (
               <div key={row.category} className="cat">
                 <div className="between"><span>{CATEGORY_LABEL[row.category]}</span><strong>{money(value)} <em>/ {money(row.limit)}</em></strong></div>
@@ -62,6 +68,7 @@ function BudgetPane() {
             );
           })}
         </div>
+        <BudgetForm />
       </section>
       <section className="card">
         <header className="card-head"><h2>Dépenses</h2></header>
@@ -74,7 +81,7 @@ function BudgetPane() {
             <p>{CATEGORY_LABEL[expense.category]} · {formatDayMonth(expense.date)}{expense.recurring ? ' · Récurrente' : ''}</p>
             <p>Payé par {name(expense.payerId)}</p>
             <p>Bénéficiaires : {expense.beneficiaryIds.map((id) => name(id)).join(', ')}</p>
-            <Advance status={expense.status} onClick={() => dispatch({ type: 'advance', ref: { kind: 'expense', id: expense.id } })} />
+            <Advance status={expense.status} onClick={() => void advance({ kind: 'expense', id: expense.id })} />
           </article>
         ))}
       </section>
@@ -83,7 +90,7 @@ function BudgetPane() {
 }
 
 function SavingsPane() {
-  const { state, name, dispatch } = useFamily();
+  const { state, name, advance } = useFamily();
   const groups = ['personnel', 'scolaire', 'familial'] as const;
   return (
     <div className="stack">
@@ -108,7 +115,7 @@ function SavingsPane() {
                 {goal.moves.map((move) => (
                   <div key={move.id} className="move">
                     <span>{name(move.memberId)} · contributeur · {money(move.amount)} · {formatDayMonth(move.date)}</span>
-                    <Advance status={move.status} onClick={() => dispatch({ type: 'advance', ref: { kind: 'move', goalId: goal.id, moveId: move.id } })} />
+                    <Advance status={move.status} onClick={() => void advance({ kind: 'move', goalId: goal.id, moveId: move.id })} />
                   </div>
                 ))}
               </article>
@@ -121,9 +128,10 @@ function SavingsPane() {
 }
 
 function TontinePane() {
-  const { state, name, dispatch } = useFamily();
+  const { state, name, advance } = useFamily();
   return (
     <div className="stack">
+      {state.tontines.length === 0 && <p className="empty">Aucune tontine pour le moment.</p>}
       {state.tontines.map((tontine) => (
         <section key={tontine.id} className="card">
           <header className="card-head"><h2>{tontine.name}</h2></header>
@@ -145,18 +153,20 @@ function TontinePane() {
                 <span>{money(payment.amount)} {payment.late && <em className="late">Retard</em>}</span>
               </div>
               <p>{payment.memberId ? 'Membre du foyer' : 'Participant extérieur'} · échéance {formatDayMonth(payment.dueDate)}</p>
-              <Advance status={payment.status} onClick={() => dispatch({ type: 'advance', ref: { kind: 'tontine', tontineId: tontine.id, paymentId: payment.id } })} />
+              <Advance status={payment.status} onClick={() => void advance({ kind: 'tontine', tontineId: tontine.id, paymentId: payment.id })} />
             </article>
           ))}
         </section>
       ))}
+      <TontineForm />
     </div>
   );
 }
 
 function InsurancePane() {
-  const { state, name, dispatch } = useFamily();
+  const { state, name, advance } = useFamily();
   return (
+    <div className="stack">
     <div className="policy-grid">
       {state.policies.map((policy) => (
         <article key={policy.id} className="card item">
@@ -168,10 +178,126 @@ function InsurancePane() {
           {policy.beneficiaryIds.length > 0 && <p>Bénéficiaires : {policy.beneficiaryIds.map((id) => name(id)).join(', ')}</p>}
           <p>Prime {money(policy.premium)} / {policy.period} · échéance {formatDayMonth(policy.premiumDueDate)}</p>
           <p>Renouvellement le {formatDayMonth(policy.renewalDate)}</p>
-          <Advance status={policy.premiumStatus} onClick={() => dispatch({ type: 'advance', ref: { kind: 'policy', id: policy.id } })} />
+          <Advance status={policy.premiumStatus} onClick={() => void advance({ kind: 'policy', id: policy.id })} />
         </article>
       ))}
     </div>
+    <PolicyForm />
+    </div>
+  );
+}
+
+function uid(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function IncomeForm() {
+  const { addIncome, state, notify } = useFamily();
+  const [label, setLabel] = useState('Salaire');
+  const [amount, setAmount] = useState('');
+  const [memberId, setMemberId] = useState(state.viewerId);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await addIncome({ id: uid('inc'), label, amount: Number(amount), memberId, date: todayISO(), status: 'confirme' });
+    setAmount('');
+    notify('Le revenu est enregistré.');
+  }
+  return (
+    <form className="form-grid" onSubmit={submit}>
+      <label className="field">Libellé<input value={label} onChange={(e) => setLabel(e.target.value)} required /></label>
+      <label className="field">Montant<input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} required /></label>
+      <label className="field">Personne
+        <select value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+          {state.people.filter((p) => p.role === 'parent').map((p) => <option key={p.id} value={p.id}>{fullName(p)}</option>)}
+        </select>
+      </label>
+      <button className="btn btn-primary" type="submit">Ajouter le revenu</button>
+    </form>
+  );
+}
+
+function BudgetForm() {
+  const { state, saveBudgets, notify } = useFamily();
+  const [limits, setLimits] = useState(state.categoryLimits);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await saveBudgets(limits);
+    notify('Les plafonds du mois sont enregistrés.');
+  }
+  return (
+    <form className="form-grid" onSubmit={submit}>
+      {BUDGET_CATEGORIES.map((category) => (
+        <label key={category} className="field">{CATEGORY_LABEL[category]}
+          <input type="number" min={0} value={limits[category]} onChange={(e) => setLimits({ ...limits, [category]: Number(e.target.value) })} />
+        </label>
+      ))}
+      <button className="btn btn-ghost" type="submit">Enregistrer les plafonds</button>
+    </form>
+  );
+}
+
+function TontineForm() {
+  const { addTontine, viewer, notify } = useFamily();
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await addTontine({
+      id: uid('ton'),
+      name,
+      organizerId: viewer.id,
+      amount: Number(amount),
+      frequency: 'mois',
+      participants: [{ name: fullName(viewer), memberId: viewer.id, order: 1, receptionDate: todayISO(), received: false }],
+      payments: [{ id: uid('pay'), name: fullName(viewer), memberId: viewer.id, dueDate: todayISO(), amount: Number(amount), status: 'prevu', late: false }],
+    });
+    setName('');
+    setAmount('');
+    notify('La tontine est créée.');
+  }
+  return (
+    <form className="card form-grid" onSubmit={submit}>
+      <header className="card-head"><h2>Nouvelle tontine</h2></header>
+      <label className="field">Nom<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
+      <label className="field">Cotisation<input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} required /></label>
+      <button className="btn btn-primary" type="submit">Créer</button>
+    </form>
+  );
+}
+
+function PolicyForm() {
+  const { addPolicy, viewer, state, notify } = useFamily();
+  const [type, setType] = useState('Habitation');
+  const [insurer, setInsurer] = useState('');
+  const [policyNumber, setPolicyNumber] = useState('');
+  const [premium, setPremium] = useState('');
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await addPolicy({
+      id: uid('pol'),
+      type,
+      insurer,
+      policyNumber,
+      subscriberId: viewer.id,
+      insuredIds: state.people.filter((p) => p.household).map((p) => p.id),
+      beneficiaryIds: [],
+      premium: Number(premium),
+      period: 'mois',
+      renewalDate: todayISO(),
+      premiumDueDate: todayISO(),
+      premiumStatus: 'prevu',
+    });
+    notify('Le contrat est enregistré.');
+  }
+  return (
+    <form className="card form-grid" onSubmit={submit}>
+      <header className="card-head"><h2>Nouveau contrat</h2></header>
+      <label className="field">Type<input value={type} onChange={(e) => setType(e.target.value)} required /></label>
+      <label className="field">Assureur<input value={insurer} onChange={(e) => setInsurer(e.target.value)} required /></label>
+      <label className="field">Numéro<input value={policyNumber} onChange={(e) => setPolicyNumber(e.target.value)} required /></label>
+      <label className="field">Prime<input type="number" min={0} value={premium} onChange={(e) => setPremium(e.target.value)} required /></label>
+      <button className="btn btn-primary" type="submit">Enregistrer</button>
+    </form>
   );
 }
 

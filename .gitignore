@@ -3,3 +3,12 @@ dist
 .DS_Store
 *.local
 .vite
+bin/
+obj/
+publish/
+server/FamiRepere.Server/wwwroot/
+*.db
+*.db-wal
+*.db-shm
+data/
+deploy/project.config.json

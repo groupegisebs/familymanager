@@ -1,0 +1,101 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-famirepere
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  PROJECT_PATH: server/FamiRepere.Server/FamiRepere.Server.csproj
+  DEFAULT_SSH_USER: "ubuntu"
+  DEFAULT_SSH_PORT: "22"
+  DEFAULT_APP_ROOT: "/opt/apps/famirepere"
+  DEFAULT_SERVICE_NAME: "famirepere"
+  DEFAULT_LISTEN_PORT: "55090"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Build web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish API
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o publish --no-self-contained
+
+      - name: Prepare deploy scripts
+        run: chmod +x deploy/deploy-gha.sh deploy/gha-env.sh
+
+      - name: Diagnose secrets
+        run: |
+          echo "FAMIREPERE_SSH_HOST        → ${{ secrets.FAMIREPERE_SSH_HOST != '' && 'OK' || 'manquant' }}"
+          echo "SSH_HOST_UBUNTU1           → ${{ secrets.SSH_HOST_UBUNTU1 != '' && 'OK' || 'manquant' }}"
+          echo "FAMIREPERE_SSH_PRIVATE_KEY → ${{ secrets.FAMIREPERE_SSH_PRIVATE_KEY != '' && 'OK' || 'manquant' }}"
+          echo "SSH_PRIVATE_KEY_UBUNTU1    → ${{ secrets.SSH_PRIVATE_KEY_UBUNTU1 != '' && 'OK' || 'manquant' }}"
+
+      - name: Load configuration
+        env:
+          KEY_APP: ${{ secrets.FAMIREPERE_SSH_PRIVATE_KEY }}
+          KEY_UBUNTU1: ${{ secrets.SSH_PRIVATE_KEY_UBUNTU1 }}
+          HOST_APP: ${{ secrets.FAMIREPERE_SSH_HOST }}
+          HOST_SECRET: ${{ secrets.SSH_HOST_UBUNTU1 }}
+          USER_SECRET: ${{ secrets.FAMIREPERE_SSH_USER }}
+          PORT_SECRET: ${{ secrets.FAMIREPERE_SSH_PORT }}
+        run: |
+          source deploy/gha-env.sh
+          pick_first() {
+            for v in "$@"; do
+              if [ -n "$v" ]; then
+                printf '%s' "$v"
+                return 0
+              fi
+            done
+            return 1
+          }
+          SSH_PRIVATE_KEY=$(pick_first "$KEY_APP" "$KEY_UBUNTU1") || true
+          SSH_HOST_RAW=$(pick_first "$HOST_APP" "$HOST_SECRET") || true
+          SSH_USER_RAW=$(pick_first "$USER_SECRET" "$DEFAULT_SSH_USER") || true
+          SSH_PORT_RAW=$(pick_first "$PORT_SECRET" "$DEFAULT_SSH_PORT") || true
+          gha_write_env SSH_HOST "$(gha_sanitize_host "$SSH_HOST_RAW")"
+          gha_write_env SSH_USER "$(gha_sanitize "$SSH_USER_RAW")"
+          gha_write_env SSH_PORT "$(gha_sanitize "$SSH_PORT_RAW")"
+          gha_write_env APP_ROOT "$DEFAULT_APP_ROOT"
+          gha_write_env SERVICE_NAME "$DEFAULT_SERVICE_NAME"
+          gha_write_env LISTEN_PORT "$DEFAULT_LISTEN_PORT"
+          gha_write_env HEALTH_URL "http://127.0.0.1:${DEFAULT_LISTEN_PORT}/health"
+          if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SSH_HOST_RAW" ]; then
+            echo "Hôte SSH ou clé privée manquant." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/famirepere
+          chmod 600 ~/.ssh/famirepere
+          gha_write_env SSH_KEY_PATH "$HOME/.ssh/famirepere"
+          ssh-keyscan -p "$(gha_sanitize "$SSH_PORT_RAW")" "$(gha_sanitize_host "$SSH_HOST_RAW")" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        run: bash deploy/deploy-gha.sh

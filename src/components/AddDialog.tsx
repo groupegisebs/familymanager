@@ -19,17 +19,17 @@ function uid(prefix: string) {
 }
 
 export function AddDialog() {
-  const { addOpen, setAddOpen, state, dispatch, notify } = useFamily();
+  const { addOpen, setAddOpen, state, notify, addActivity, addEvent, addExpense, addGoal, addTask, addDocument } = useFamily();
   const parents = state.people.filter((p) => p.role === 'parent');
   const children = state.people.filter((p) => p.role === 'enfant');
   const household = state.people.filter((p) => p.household);
   const [error, setError] = useState('');
-  const [form, setForm] = useState(() => initial(parents[0]?.id ?? 'thomas', children[0]?.id ?? 'lucas'));
+  const [form, setForm] = useState(() => initial(parents[0]?.id ?? '', children[0]?.id ?? parents[0]?.id ?? ''));
 
   useEffect(() => {
     if (!addOpen) return;
-    const parentId = state.people.find((p) => p.role === 'parent')?.id ?? 'thomas';
-    const childId = state.people.find((p) => p.role === 'enfant')?.id ?? 'lucas';
+    const parentId = state.people.find((p) => p.role === 'parent')?.id ?? '';
+    const childId = state.people.find((p) => p.role === 'enfant')?.id ?? parentId;
     setForm(initial(parentId, childId));
     setError('');
     const onKey = (e: KeyboardEvent) => {
@@ -43,8 +43,10 @@ export function AddDialog() {
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    setError('');
+    try {
     const name = form.name.trim();
     if (!name) {
       setError('Indiquez un intitulé.');
@@ -108,7 +110,7 @@ export function AddDialog() {
           activityId,
         };
       }
-      dispatch({ type: 'add-activity', bundle });
+      await addActivity(bundle);
       notify(`${name} est au calendrier, avec le transport${cost > 0 ? ', la dépense prévue' : ''}${form.gear.trim() ? ' et le rappel de matériel' : ''}.`);
     } else if (form.kind === 'rdv') {
       const event: CalEvent = {
@@ -124,9 +126,9 @@ export function AddDialog() {
         notes: form.notes.trim() || undefined,
         audience: form.eventKind === 'famille' ? 'famille' : 'prive',
         sensitive: form.eventKind === 'medical' ? 'medical' : 'aucune',
-        sharedWithIds: form.shareProche ? ['camille'] : [],
+        sharedWithIds: form.shareProche ? state.people.filter((p) => p.role === 'proche').map((p) => p.id) : [],
       };
-      dispatch({ type: 'add-event', event });
+      await addEvent(event);
       notify('Le rendez-vous est ajouté au calendrier.');
     } else if (form.kind === 'depense') {
       const amount = Number(form.cost);
@@ -145,7 +147,7 @@ export function AddDialog() {
         status: form.payStatus,
         recurring: form.recurring,
       };
-      dispatch({ type: 'add-expense', expense });
+      await addExpense(expense);
       notify('La dépense est enregistrée avec son statut : prévu, déclaré ou confirmé.');
     } else if (form.kind === 'epargne') {
       const target = Number(form.target);
@@ -164,13 +166,10 @@ export function AddDialog() {
         visibility: form.visibility,
         moves: amount > 0 ? [{ id: uid('mv'), memberId: form.payerId, amount, status: form.payStatus, date: form.date, label: 'Versement' }] : [],
       };
-      dispatch({ type: 'add-goal', goal });
+      await addGoal(goal);
       notify('L’objectif d’épargne est créé. Seul un versement confirmé avance la progression.');
     } else if (form.kind === 'tache') {
-      dispatch({
-        type: 'add-task',
-        task: { id: uid('task'), title: name, assigneeId: form.assigneeId, due: form.date, done: false },
-      });
+      await addTask({ id: uid('task'), title: name, assigneeId: form.assigneeId, due: form.date, done: false });
       notify('La tâche est attribuée.');
     } else {
       const doc: DocItem = {
@@ -180,12 +179,15 @@ export function AddDialog() {
         date: form.date,
         memberIds: form.beneficiaries.length ? form.beneficiaries : [form.memberId],
         sensitivity: form.sensitivity,
-        sharedWithIds: form.shareProche && form.sensitivity === 'general' ? ['camille'] : [],
+        sharedWithIds: form.shareProche && form.sensitivity === 'general' ? state.people.filter((p) => p.role === 'proche').map((p) => p.id) : [],
       };
-      dispatch({ type: 'add-document', document: doc });
+      await addDocument(doc);
       notify('Le document est classé. L’accès suit sa sensibilité.');
     }
     setAddOpen(false);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Enregistrement impossible.');
+  }
   }
 
   function toggleBeneficiary(id: string) {

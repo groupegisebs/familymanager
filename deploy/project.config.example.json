@@ -1,0 +1,10 @@
+{
+  "appName": "FamiRepère",
+  "serviceName": "famirepere",
+  "appRoot": "/opt/apps/famirepere",
+  "dllName": "FamiRepere.Server.dll",
+  "projectPath": "server/FamiRepere.Server/FamiRepere.Server.csproj",
+  "healthCheckUrl": "http://127.0.0.1:55090/health",
+  "listenPort": 55090,
+  "sshIdentityKey": "FAMIREPERE_SSH_PRIVATE_KEY"
+}
