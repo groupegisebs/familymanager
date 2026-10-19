@@ -263,12 +263,12 @@ string ReadCookie(HttpContext ctx) => ctx.Request.Cookies["famirepere"] ?? "";
 
 void WriteCookie(HttpContext ctx, string token)
 {
+    var host = ctx.Request.Host.Host;
+    var local = host is "localhost" or "127.0.0.1" or "::1";
     ctx.Response.Cookies.Append("famirepere", token, new CookieOptions
     {
         HttpOnly = true,
         SameSite = SameSiteMode.Lax,
-        var host = ctx.Request.Host.Host;
-        var local = host is "localhost" or "127.0.0.1" or "::1";
         Secure = ctx.Request.IsHttps || (app.Environment.IsProduction() && !local),
         MaxAge = TimeSpan.FromDays(14),
         Path = "/",
