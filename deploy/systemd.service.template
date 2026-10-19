@@ -12,8 +12,8 @@ Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://127.0.0.1:__LISTEN_PORT__
 Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=ConnectionStrings__Sqlite=Data Source=__APP_ROOT__/data/famirepere.db
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:__APP_ROOT__/data/service.log
+StandardError=append:__APP_ROOT__/data/service.log
 
 [Install]
 WantedBy=multi-user.target

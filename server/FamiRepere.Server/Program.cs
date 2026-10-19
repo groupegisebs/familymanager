@@ -3,6 +3,7 @@ using FamiRepere.Server;
 
 try
 {
+    SQLitePCL.Batteries_V2.Init();
     var builder = WebApplication.CreateBuilder(args);
     var db = new FamilyDb(builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=data/famirepere.db");
     Start(builder, db);
@@ -10,7 +11,22 @@ try
 catch (Exception ex)
 {
     Console.Error.WriteLine(ex);
+    TryWriteStartupLog(ex);
     Environment.ExitCode = 1;
+}
+
+static void TryWriteStartupLog(Exception ex)
+{
+    try
+    {
+        var dir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "data"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "startup.log"), ex.ToString());
+    }
+    catch (Exception logEx)
+    {
+        Console.Error.WriteLine(logEx);
+    }
 }
 
 static void Start(WebApplicationBuilder builder, FamilyDb db)

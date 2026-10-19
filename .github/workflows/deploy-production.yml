@@ -45,7 +45,9 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Publish API
-        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o publish --no-self-contained
+        run: |
+          dotnet publish ${{ env.PROJECT_PATH }} -c Release -r linux-x64 -o publish --self-contained false
+          find publish -name 'libe_sqlite3.so' -print
 
       - name: Prepare deploy scripts
         run: chmod +x deploy/deploy-gha.sh deploy/gha-env.sh

@@ -34,6 +34,7 @@ remote "rm -rf /tmp/famirepere-publish"
 
 UNIT=$(sed -e "s|__APP_ROOT__|$APP_ROOT|g" -e "s|__LISTEN_PORT__|$LISTEN_PORT|g" deploy/systemd.service.template)
 remote "cat > /tmp/famirepere.service" <<<"$UNIT"
+remote "rm -f '$APP_ROOT/data/startup.log' '$APP_ROOT/data/service.log'"
 remote "sudo mv /tmp/famirepere.service /etc/systemd/system/${SERVICE_NAME}.service && sudo systemctl daemon-reload && sudo systemctl enable '$SERVICE_NAME' && sudo systemctl start '$SERVICE_NAME'"
 
 echo "Attente de $HEALTH_URL"
@@ -47,5 +48,8 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 echo "Le contrôle de santé a échoué." >&2
 remote "sudo systemctl status '$SERVICE_NAME' --no-pager" || true
-remote "journalctl -u '$SERVICE_NAME' -n 80 --no-pager" || true
+echo "--- service.log ---"
+remote "cat '$APP_ROOT/data/service.log'" || true
+echo "--- startup.log ---"
+remote "cat '$APP_ROOT/data/startup.log'" || true
 exit 1
