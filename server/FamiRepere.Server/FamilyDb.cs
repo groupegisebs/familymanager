@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
@@ -54,6 +55,7 @@ public sealed class FamilyDb
             )
             """,
             "CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS login_guards (key TEXT PRIMARY KEY, failures INTEGER NOT NULL, locked_until TEXT)",
             "CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (kind, id))",
             "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
         }) db.Execute(sql);
@@ -108,13 +110,25 @@ public sealed class FamilyDb
 
     public string OpenSession(string username, string password)
     {
-        using var db = Open();
-        var row = db.QueryOne("SELECT id, password_hash FROM people WHERE username = $u", ("$u", username.Trim().ToLowerInvariant()));
-        if (row is null || !Verify(password, row["password_hash"]!.ToString()!))
+        var name = username.Trim().ToLowerInvariant();
+        if (name.Length is < 3 or > 80 || password.Length is < 1 or > 200)
             throw new InvalidOperation("Identifiant ou mot de passe incorrect.");
+        if (IsLocked("user:" + name))
+            throw new InvalidOperation("Trop de tentatives. Réessayez dans quelques minutes.");
+        using var db = Open();
+        var row = db.QueryOne("SELECT id, password_hash FROM people WHERE username = $u", ("$u", name));
+        var stored = row?["password_hash"]?.ToString() ?? DummyHash;
+        var ok = Verify(password, stored);
+        if (row is null || !ok)
+        {
+            if (row is not null) RegisterFailure("user:" + name);
+            throw new InvalidOperation("Identifiant ou mot de passe incorrect.");
+        }
+        ClearGuard("user:" + name);
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var expires = DateTime.UtcNow.AddDays(14).ToString("o");
-        db.Execute("INSERT INTO sessions (token, user_id, expires_at) VALUES ($t, $u, $e)", ("$t", token), ("$u", row["id"]!.ToString()!), ("$e", expires));
+        db.Execute("DELETE FROM sessions WHERE expires_at <= $now", ("$now", DateTime.UtcNow.ToString("o")));
+        db.Execute("INSERT INTO sessions (token, user_id, expires_at) VALUES ($t, $u, $e)", ("$t", SessionKey(token)), ("$u", row["id"]!.ToString()!), ("$e", expires));
         return token;
     }
 
@@ -122,20 +136,49 @@ public sealed class FamilyDb
     {
         if (string.IsNullOrEmpty(token)) return;
         using var db = Open();
-        db.Execute("DELETE FROM sessions WHERE token = $t", ("$t", token));
+        db.Execute("DELETE FROM sessions WHERE token = $t", ("$t", SessionKey(token)));
     }
 
     public Person? FindBySession(string? token)
     {
-        if (string.IsNullOrEmpty(token)) return null;
+        if (string.IsNullOrEmpty(token) || token.Length > 128) return null;
         using var db = Open();
         var row = db.QueryOne("""
             SELECT p.* FROM sessions s
             JOIN people p ON p.id = s.user_id
             WHERE s.token = $t AND s.expires_at > $now
-            """, ("$t", token), ("$now", DateTime.UtcNow.ToString("o")));
+            """, ("$t", SessionKey(token)), ("$now", DateTime.UtcNow.ToString("o")));
         return row is null ? null : MapPerson(row);
     }
+
+    bool IsLocked(string key)
+    {
+        using var db = Open();
+        var row = db.QueryOne("SELECT locked_until FROM login_guards WHERE key = $k", ("$k", key));
+        if (row is null || row["locked_until"] is null) return false;
+        return string.CompareOrdinal(S(row, "locked_until"), DateTime.UtcNow.ToString("o")) > 0;
+    }
+
+    void RegisterFailure(string key)
+    {
+        using var db = Open();
+        var row = db.QueryOne("SELECT failures FROM login_guards WHERE key = $k", ("$k", key));
+        var failures = (row is null ? 0 : Convert.ToInt32(row["failures"])) + 1;
+        string? until = failures >= 8 ? DateTime.UtcNow.AddMinutes(15).ToString("o") : null;
+        if (until is not null) failures = 0;
+        db.Execute("""
+            INSERT INTO login_guards (key, failures, locked_until) VALUES ($k, $f, $u)
+            ON CONFLICT(key) DO UPDATE SET failures = $f, locked_until = $u
+            """, ("$k", key), ("$f", failures), ("$u", until));
+    }
+
+    void ClearGuard(string key)
+    {
+        using var db = Open();
+        db.Execute("DELETE FROM login_guards WHERE key = $k", ("$k", key));
+    }
+
+    static string SessionKey(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     public AppState ReadAll()
     {
@@ -348,6 +391,8 @@ public sealed class FamilyDb
     };
 
     static string S(Dictionary<string, object?> row, string key) => row[key]?.ToString() ?? "";
+
+    static readonly string DummyHash = Hash("famirepere-timing");
 
     public static string Hash(string password)
     {

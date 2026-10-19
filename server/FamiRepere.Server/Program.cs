@@ -35,15 +35,41 @@ static void TryWriteStartupLog(Exception ex)
 
 static void Start(WebApplicationBuilder builder, FamilyDb db)
 {
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Limits.MaxRequestBodySize = 1_048_576;
+});
 builder.Services.AddSingleton(db);
 builder.Services.AddHttpClient<ParentMail>();
 builder.Services.AddHostedService<ParentDigest>();
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    o.SerializerOptions.MaxDepth = 16;
 });
 var app = builder.Build();
 var mail = app.Services.GetRequiredService<ParentMail>();
+
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    ctx.Response.Headers["X-Frame-Options"] = "DENY";
+    ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
+    ctx.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    ctx.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
+    if (ctx.Request.Path.StartsWithSegments("/api"))
+        ctx.Response.Headers["Cache-Control"] = "no-store";
+    if (app.Environment.IsProduction() && ctx.Request.IsHttps)
+        ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000";
+    if (!HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method) && !SameOrigin(ctx))
+    {
+        ctx.Response.StatusCode = 403;
+        await ctx.Response.WriteAsJsonAsync(new { error = "Requête refusée." });
+        return;
+    }
+    await next();
+});
 
 app.Use(async (ctx, next) =>
 {
@@ -57,6 +83,12 @@ app.Use(async (ctx, next) =>
     {
         ctx.Response.StatusCode = 400;
         await ctx.Response.WriteAsJsonAsync(new { error = "Cet identifiant est déjà utilisé." });
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex);
+        ctx.Response.StatusCode = 500;
+        await ctx.Response.WriteAsJsonAsync(new { error = "La requête n’a pas abouti." });
     }
 });
 
@@ -138,7 +170,7 @@ app.MapPost("/api/events", (HttpContext ctx, CalEvent item) => Save(ctx, "event"
 app.MapPost("/api/child/event", (HttpContext ctx, CalEvent item) =>
 {
     var child = Child(ctx);
-    RequireId(item.Id);
+    item.Id = NewId("ev");
     if (string.IsNullOrWhiteSpace(item.Title)) throw new InvalidOperation("Indiquez un intitulé.");
     if (item.Title.Length > 120) throw new InvalidOperation("L’intitulé est trop long.");
     if (string.IsNullOrWhiteSpace(item.Date)) throw new InvalidOperation("Indiquez une date.");
@@ -161,7 +193,7 @@ app.MapPost("/api/child/event", (HttpContext ctx, CalEvent item) =>
 app.MapPost("/api/requests", (HttpContext ctx, ChildRequest item) =>
 {
     var child = Child(ctx);
-    RequireId(item.Id);
+    item.Id = NewId("req");
     if (string.IsNullOrWhiteSpace(item.Title)) throw new InvalidOperation("Indiquez un intitulé.");
     item.AuthorId = child.Id;
     item.Title = item.Title.Trim();
@@ -174,7 +206,7 @@ app.MapPost("/api/requests", (HttpContext ctx, ChildRequest item) =>
 app.MapPost("/api/notes", (HttpContext ctx, ChildNote item) =>
 {
     var child = Child(ctx);
-    RequireId(item.Id);
+    item.Id = NewId("note");
     if (string.IsNullOrWhiteSpace(item.Title) && string.IsNullOrWhiteSpace(item.Body)) throw new InvalidOperation("Écrivez la note.");
     item.AuthorId = child.Id;
     item.Title = string.IsNullOrWhiteSpace(item.Title) ? "Note" : item.Title.Trim();
@@ -235,7 +267,9 @@ void WriteCookie(HttpContext ctx, string token)
     {
         HttpOnly = true,
         SameSite = SameSiteMode.Lax,
-        Secure = ctx.Request.IsHttps,
+        var host = ctx.Request.Host.Host;
+        var local = host is "localhost" or "127.0.0.1" or "::1";
+        Secure = ctx.Request.IsHttps || (app.Environment.IsProduction() && !local),
         MaxAge = TimeSpan.FromDays(14),
         Path = "/",
     });
@@ -268,15 +302,33 @@ Person Parent(HttpContext ctx)
 
 void RequireId(string id)
 {
-    if (string.IsNullOrWhiteSpace(id) || id.Length > 40) throw new InvalidOperation("Identifiant invalide.");
+    if (string.IsNullOrWhiteSpace(id) || id.Length > 40 || id.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_'))
+        throw new InvalidOperation("Identifiant invalide.");
+}
+
+static string NewId(string prefix) => prefix + "-" + Guid.NewGuid().ToString("N")[..12];
+
+static bool SameOrigin(HttpContext ctx)
+{
+    var origin = ctx.Request.Headers.Origin.ToString();
+    if (string.IsNullOrEmpty(origin))
+    {
+        var site = ctx.Request.Headers["Sec-Fetch-Site"].ToString();
+        return site is "" or "same-origin" or "none";
+    }
+    return Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && string.Equals(uri.Host, ctx.Request.Host.Host, StringComparison.OrdinalIgnoreCase);
 }
 
 void ValidateAccount(string first, string last, int age, string username, string password)
 {
-    if (string.IsNullOrWhiteSpace(first)) throw new InvalidOperation("Indiquez le prénom.");
+    if (string.IsNullOrWhiteSpace(first) || first.Trim().Length > 60) throw new InvalidOperation("Indiquez le prénom.");
+    if (last.Trim().Length > 60) throw new InvalidOperation("Le nom est trop long.");
     if (age < 0 || age > 120) throw new InvalidOperation("Âge invalide.");
-    if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3) throw new InvalidOperation("L’identifiant doit contenir au moins 3 caractères.");
-    if (password.Length < 8) throw new InvalidOperation("Le mot de passe doit contenir au moins 8 caractères.");
+    var login = username.Trim();
+    if (login.Length < 3 || login.Length > 80 || login.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '@' or '.' or '_' or '-')))
+        throw new InvalidOperation("L’identifiant doit contenir au moins 3 caractères.");
+    if (password.Length < 8 || password.Length > 200) throw new InvalidOperation("Le mot de passe doit contenir au moins 8 caractères.");
 }
 }
 
