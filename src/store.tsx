@@ -27,6 +27,7 @@ type Store = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   createMember: (body: MemberInput) => Promise<void>;
+  updateMember: (id: string, body: { firstName: string; role: 'parent' | 'enfant' | 'proche'; relation: string; avatar: string; username: string; password: string }) => Promise<void>;
   setAvatar: (id: string, avatar: string) => Promise<void>;
   toggleMask: () => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
@@ -129,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPhase('login');
     },
     createMember: (body) => run('/api/members', body),
+    updateMember: (id, body) => run(`/api/members/${id}/profile`, body),
     setAvatar: (id, avatar) => run(`/api/members/${id}/avatar`, { avatar }),
     toggleMask: () => run('/api/settings/mask', {}),
     toggleTask: (id) => run(`/api/tasks/${id}/toggle`, {}),

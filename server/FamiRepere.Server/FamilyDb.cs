@@ -122,6 +122,46 @@ public sealed class FamilyDb
         db.Execute("UPDATE people SET avatar = $a WHERE id = $id", ("$a", avatar), ("$id", personId));
     }
 
+    public void UpdateMember(Person actor, string personId, string firstName, string role, string relation, string avatar, string username, string password)
+    {
+        if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut modifier un membre.");
+        if (role is not ("parent" or "enfant" or "proche")) throw new InvalidOperation("Rôle inconnu.");
+        if (!IsAvatar(avatar)) throw new InvalidOperation("Choisissez une icône.");
+        if (string.IsNullOrWhiteSpace(firstName) || firstName.Trim().Length > 60) throw new InvalidOperation("Indiquez le prénom.");
+        if (string.IsNullOrWhiteSpace(relation) || relation.Trim().Length > 60) throw new InvalidOperation("Indiquez le lien familial.");
+        var login = username.Trim().ToLowerInvariant();
+        if (login.Length < 3 || login.Length > 80 || login.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '@' or '.' or '_' or '-')))
+            throw new InvalidOperation("L’identifiant doit contenir au moins 3 caractères.");
+        if (password.Length > 200 || (password.Length > 0 && password.Length < 8))
+            throw new InvalidOperation("Le mot de passe doit contenir au moins 8 caractères.");
+        using var db = Open();
+        var row = db.QueryOne("SELECT is_super_admin FROM people WHERE id = $id", ("$id", personId));
+        if (row is null) throw new InvalidOperation("Ce membre est introuvable.");
+        var admin = Convert.ToInt32(row["is_super_admin"]) == 1;
+        if (admin && role != "parent") throw new InvalidOperation("Le père reste parent.");
+        var household = admin || role != "proche" ? 1 : 0;
+        if (password.Length > 0)
+        {
+            db.Execute("""
+                UPDATE people
+                SET first_name = $fn, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h, password_hash = $pw
+                WHERE id = $id
+                """,
+                ("$fn", firstName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
+                ("$u", login), ("$h", household), ("$pw", Hash(password)), ("$id", personId));
+        }
+        else
+        {
+            db.Execute("""
+                UPDATE people
+                SET first_name = $fn, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h
+                WHERE id = $id
+                """,
+                ("$fn", firstName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
+                ("$u", login), ("$h", household), ("$id", personId));
+        }
+    }
+
     public static bool IsAvatar(string avatar) => avatar is "thomas" or "sophie" or "emma" or "lucas" or "chloe" or "camille";
 
     public string OpenSession(string username, string password)

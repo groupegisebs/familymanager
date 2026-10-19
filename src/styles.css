@@ -202,7 +202,8 @@ a { color: inherit; }
 .family-tile h2 { margin: 8px 0 0; font-size: 18px; }
 .icon-picker { display: flex; flex-wrap: wrap; gap: 6px; }
 .icon-picker button { border: 2px solid transparent; background: #f6f4fb; border-radius: 50%; padding: 2px; cursor: pointer; line-height: 0; }
-.icon-picker button.on { border-color: var(--primary); }
+.family-tile .tile-actions { align-self: flex-end; margin-top: 8px; }
+.form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
 .family-tile p { margin: 0; color: var(--muted); }
 
 .hero, .hero-inline { display: flex; gap: 16px; align-items: center; background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; border-top: 4px solid var(--primary); }

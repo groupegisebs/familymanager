@@ -165,6 +165,14 @@ app.MapPost("/api/members/{id}/avatar", (HttpContext ctx, string id, AvatarBody 
     return Results.Ok(db.View(actor));
 });
 
+app.MapPost("/api/members/{id}/profile", (HttpContext ctx, string id, MemberUpdate body) =>
+{
+    var actor = Parent(ctx);
+    RequireId(id);
+    db.UpdateMember(actor, id, body.FirstName, body.Role, body.Relation, body.Avatar, body.Username, body.Password);
+    return Results.Ok(db.View(actor));
+});
+
 app.MapPost("/api/settings/mask", (HttpContext ctx) =>
 {
     var person = Required(ctx);
@@ -386,6 +394,16 @@ sealed class SetupBody
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
     public int Age { get; set; }
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+}
+
+sealed class MemberUpdate
+{
+    public string FirstName { get; set; } = "";
+    public string Role { get; set; } = "enfant";
+    public string Relation { get; set; } = "";
+    public string Avatar { get; set; } = "";
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
 }
