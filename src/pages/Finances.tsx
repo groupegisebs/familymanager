@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { canSeeExpense, canSeeGoal, canSeePolicy, canSeePolicyDetails, goalByStatus, goalConfirmed, monthFlow } from '../access';
 import { BUDGET_CATEGORIES } from '../data';
-import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, INCOME_FREQUENCY_LABEL, INCOME_KIND_LABEL, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, pct, todayISO } from '../format';
+import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, INCOME_FREQUENCY_LABEL, INCOME_KIND_LABEL, TONTINE_FREQUENCY, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, nextTontineDue, pct, todayISO } from '../format';
 import type { IncomeFrequency, IncomeKind, PayStatus } from '../types';
 import { StatusPill, useFamily } from '../components/ui';
 
@@ -132,15 +132,23 @@ function SavingsPane() {
   );
 }
 
+function tontineCadence(frequency: string) {
+  return frequency === 'mois' || frequency === TONTINE_FREQUENCY || frequency.toLowerCase().includes('dimanche')
+    ? TONTINE_FREQUENCY
+    : frequency;
+}
+
 function TontinePane() {
   const { state, name, advance } = useFamily();
+  const nextDue = nextTontineDue();
   return (
     <div className="stack">
+      <p className="hint">Rappel : la cotisation de tontine tombe chaque dernier dimanche du mois. Prochaine échéance : {formatDayMonth(nextDue)}.</p>
       {state.tontines.length === 0 && <p className="empty">Aucune tontine pour le moment.</p>}
       {state.tontines.map((tontine) => (
         <section key={tontine.id} className="card">
           <header className="card-head"><h2>{tontine.name}</h2></header>
-          <p>Organisatrice : {name(tontine.organizerId)} · {money(tontine.amount)} / {tontine.frequency}</p>
+          <p>Organisatrice : {name(tontine.organizerId)} · {money(tontine.amount)} · {tontineCadence(tontine.frequency)}</p>
           <h3>Ordre des bénéficiaires</h3>
           <ol className="turns">
             {tontine.participants.map((person) => (
@@ -270,6 +278,7 @@ function TontineForm() {
   const { addTontine, viewer, notify } = useFamily();
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
+  const due = nextTontineDue();
   async function submit(event: FormEvent) {
     event.preventDefault();
     await addTontine({
@@ -277,9 +286,9 @@ function TontineForm() {
       name,
       organizerId: viewer.id,
       amount: Number(amount),
-      frequency: 'mois',
-      participants: [{ name: fullName(viewer), memberId: viewer.id, order: 1, receptionDate: todayISO(), received: false }],
-      payments: [{ id: uid('pay'), name: fullName(viewer), memberId: viewer.id, dueDate: todayISO(), amount: Number(amount), status: 'prevu', late: false }],
+      frequency: TONTINE_FREQUENCY,
+      participants: [{ name: fullName(viewer), memberId: viewer.id, order: 1, receptionDate: due, received: false }],
+      payments: [{ id: uid('pay'), name: fullName(viewer), memberId: viewer.id, dueDate: due, amount: Number(amount), status: 'prevu', late: false }],
     });
     setName('');
     setAmount('');
@@ -288,6 +297,7 @@ function TontineForm() {
   return (
     <form className="card form-grid" onSubmit={submit}>
       <header className="card-head"><h2>Nouvelle tontine</h2></header>
+      <p className="hint field-wide">Cotisation {TONTINE_FREQUENCY}. Première échéance : {formatDayMonth(due)}.</p>
       <label className="field">Nom<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
       <label className="field">Cotisation<input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} required /></label>
       <button className="btn btn-primary" type="submit">Créer</button>

@@ -60,6 +60,26 @@ export function monthKey(iso: string) {
   return iso.slice(0, 7);
 }
 
+/** Dernier dimanche du mois civil (year, monthIndex 0-11). */
+export function lastSundayOfMonth(year: number, monthIndex: number) {
+  const end = new Date(year, monthIndex + 1, 0);
+  end.setDate(end.getDate() - end.getDay());
+  return isoFromDate(end);
+}
+
+/** Prochaine échéance de tontine : dernier dimanche du mois en cours, ou du mois suivant s’il est passé. */
+export function nextTontineDue(from = todayISO()) {
+  const dt = parseISO(from);
+  let due = lastSundayOfMonth(dt.getFullYear(), dt.getMonth());
+  if (due < from) {
+    const next = new Date(dt.getFullYear(), dt.getMonth() + 1, 1);
+    due = lastSundayOfMonth(next.getFullYear(), next.getMonth());
+  }
+  return due;
+}
+
+export const TONTINE_FREQUENCY = 'chaque dernier dimanche du mois';
+
 export const WEEKDAYS_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
 export function formatTime(t: string) {

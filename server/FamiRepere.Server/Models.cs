@@ -124,7 +124,7 @@ public sealed class Tontine
     public string Name { get; set; } = "";
     public string OrganizerId { get; set; } = "";
     public decimal Amount { get; set; }
-    public string Frequency { get; set; } = "mois";
+    public string Frequency { get; set; } = "chaque dernier dimanche du mois";
     public List<TontineParticipant> Participants { get; set; } = [];
     public List<TontinePayment> Payments { get; set; } = [];
 }
