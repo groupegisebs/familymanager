@@ -103,12 +103,21 @@ app.MapPost("/api/setup", (HttpContext ctx, SetupBody body) =>
     return Results.Ok(db.View(person));
 });
 
-app.MapPost("/api/login", (HttpContext ctx, LoginBody body) =>
+app.MapPost("/api/login", async (HttpContext ctx) =>
 {
-    var token = db.OpenSession(body.Username, body.Password);
-    WriteCookie(ctx, token);
-    var person = db.FindBySession(token)!;
-    return Results.Ok(db.View(person));
+    var (username, password, form) = await ReadLogin(ctx);
+    try
+    {
+        var token = db.OpenSession(username, password);
+        WriteCookie(ctx, token);
+        if (form) return Results.Redirect("/");
+        return Results.Ok(db.View(db.FindBySession(token)!));
+    }
+    catch (InvalidOperation ex) when (form)
+    {
+        var code = ex.Message.StartsWith("Trop", StringComparison.Ordinal) ? "attente" : "refus";
+        return Results.Redirect("/?connexion=" + code);
+    }
 });
 
 app.MapPost("/api/logout", (HttpContext ctx) =>
@@ -307,6 +316,17 @@ void RequireId(string id)
 }
 
 static string NewId(string prefix) => prefix + "-" + Guid.NewGuid().ToString("N")[..12];
+
+static async Task<(string Username, string Password, bool Form)> ReadLogin(HttpContext ctx)
+{
+    if (ctx.Request.HasFormContentType)
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        return (form["username"].ToString(), form["password"].ToString(), true);
+    }
+    var body = await ctx.Request.ReadFromJsonAsync<LoginBody>() ?? new LoginBody();
+    return (body.Username, body.Password, false);
+}
 
 static bool SameOrigin(HttpContext ctx)
 {

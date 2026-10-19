@@ -55,6 +55,7 @@ async function request(path: string, body?: unknown): Promise<AppState | null> {
   });
   if (res.status === 401) return null;
   const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('La protection du site a bloqué l’action. Rechargez la page.');
   const data = text ? JSON.parse(text) as { error?: string } & AppState : null;
   if (!res.ok) throw new Error(data?.error || 'La requête a échoué.');
   return data && data.people ? data : null;

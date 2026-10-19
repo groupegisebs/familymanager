@@ -37,34 +37,23 @@ export function SetupPage() {
 }
 
 export function LoginPage() {
-  const { login, error } = useApp();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [local, setLocal] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setLocal('');
-    try {
-      await login(username, password);
-    } catch (err) {
-      setLocal(err instanceof Error ? err.message : 'Connexion impossible.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { error } = useApp();
+  const code = new URLSearchParams(window.location.search).get('connexion');
+  const local = code === 'attente'
+    ? 'Trop de tentatives. Réessayez dans quelques minutes.'
+    : code === 'refus'
+      ? 'Identifiant ou mot de passe incorrect.'
+      : '';
 
   return (
     <main className="auth">
-      <form className="card auth-card" onSubmit={submit}>
+      <form className="card auth-card" method="post" action="/api/login">
         <p className="auth-brand"><img src="/famirepere-logo-complet.jpg" alt="FamiRepère" /></p>
         <h1>Connexion</h1>
-        <label className="field">Identifiant<input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required /></label>
-        <label className="field">Mot de passe<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></label>
+        <label className="field">Identifiant<input name="username" autoComplete="username" required /></label>
+        <label className="field">Mot de passe<input name="password" type="password" autoComplete="current-password" required /></label>
         {(local || error) && <p className="form-error">{local || error}</p>}
-        <button className="btn btn-primary" type="submit" disabled={busy}>Entrer</button>
+        <button className="btn btn-primary" type="submit">Entrer</button>
       </form>
     </main>
   );
