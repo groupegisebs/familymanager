@@ -430,6 +430,7 @@ function ChildHome() {
             <article key={request.id} className="item">
               <strong>{request.title}</strong>
               {request.detail && <p>{request.detail}</p>}
+              
             </article>
           ))}
         </article>
