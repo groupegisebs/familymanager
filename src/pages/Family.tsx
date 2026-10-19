@@ -16,7 +16,7 @@ export function FamilyPage() {
           <Link key={person.id} to={`/famille/${person.id}`} className="family-tile">
             <Avatar id={person.id} size={84} />
             <h2>{fullName(person)}</h2>
-            <p>{person.age} ans</p>
+            {person.age > 0 && <p>{person.age} ans</p>}
             <Badge person={person} />
           </Link>
         ))}

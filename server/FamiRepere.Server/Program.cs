@@ -6,6 +6,10 @@ try
     SQLitePCL.Batteries_V2.Init();
     var builder = WebApplication.CreateBuilder(args);
     var db = new FamilyDb(builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=data/famirepere.db");
+    var seedEmail = builder.Configuration["SeedAdmin:Email"];
+    var seedPassword = builder.Configuration["SeedAdmin:Password"];
+    if (!string.IsNullOrWhiteSpace(seedEmail) && !string.IsNullOrWhiteSpace(seedPassword))
+        db.EnsureSeedAdmin(seedEmail, seedPassword);
     Start(builder, db);
 }
 catch (Exception ex)

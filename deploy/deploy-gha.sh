@@ -33,6 +33,12 @@ remote "rsync -a --delete --exclude appsettings.Production.json /tmp/famirepere-
 remote "rm -rf /tmp/famirepere-publish"
 
 UNIT=$(sed -e "s|__APP_ROOT__|$APP_ROOT|g" -e "s|__LISTEN_PORT__|$LISTEN_PORT|g" deploy/systemd.service.template)
+if [ -n "${SEED_ADMIN_EMAIL:-}" ] && [ -n "${SEED_ADMIN_PASSWORD:-}" ]; then
+  UNIT=${UNIT//__SEED_EMAIL__/$SEED_ADMIN_EMAIL}
+  UNIT=${UNIT//__SEED_PASSWORD__/$SEED_ADMIN_PASSWORD}
+else
+  UNIT=$(printf '%s\n' "$UNIT" | sed '/SeedAdmin__/d')
+fi
 remote "cat > /tmp/famirepere.service" <<<"$UNIT"
 remote "rm -f '$APP_ROOT/data/startup.log' '$APP_ROOT/data/service.log'"
 remote "sudo mv /tmp/famirepere.service /etc/systemd/system/${SERVICE_NAME}.service && sudo systemctl daemon-reload && sudo systemctl enable '$SERVICE_NAME' && sudo systemctl start '$SERVICE_NAME'"

@@ -58,6 +58,8 @@ jobs:
           echo "SSH_HOST_UBUNTU1           → ${{ secrets.SSH_HOST_UBUNTU1 != '' && 'OK' || 'manquant' }}"
           echo "FAMIREPERE_SSH_PRIVATE_KEY → ${{ secrets.FAMIREPERE_SSH_PRIVATE_KEY != '' && 'OK' || 'manquant' }}"
           echo "SSH_PRIVATE_KEY_UBUNTU1    → ${{ secrets.SSH_PRIVATE_KEY_UBUNTU1 != '' && 'OK' || 'manquant' }}"
+          echo "FAMIREPERE_ADMIN_EMAIL     → ${{ secrets.FAMIREPERE_ADMIN_EMAIL != '' && 'OK' || 'manquant' }}"
+          echo "FAMIREPERE_ADMIN_PASSWORD  → ${{ secrets.FAMIREPERE_ADMIN_PASSWORD != '' && 'OK' || 'manquant' }}"
 
       - name: Load configuration
         env:
@@ -67,6 +69,8 @@ jobs:
           HOST_SECRET: ${{ secrets.SSH_HOST_UBUNTU1 }}
           USER_SECRET: ${{ secrets.FAMIREPERE_SSH_USER }}
           PORT_SECRET: ${{ secrets.FAMIREPERE_SSH_PORT }}
+          ADMIN_EMAIL: ${{ secrets.FAMIREPERE_ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.FAMIREPERE_ADMIN_PASSWORD }}
         run: |
           source deploy/gha-env.sh
           pick_first() {
@@ -89,6 +93,8 @@ jobs:
           gha_write_env SERVICE_NAME "$DEFAULT_SERVICE_NAME"
           gha_write_env LISTEN_PORT "$DEFAULT_LISTEN_PORT"
           gha_write_env HEALTH_URL "http://127.0.0.1:${DEFAULT_LISTEN_PORT}/health"
+          gha_write_env SEED_ADMIN_EMAIL "$(gha_sanitize "$ADMIN_EMAIL")"
+          gha_write_env SEED_ADMIN_PASSWORD "$ADMIN_PASSWORD"
           if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SSH_HOST_RAW" ]; then
             echo "Hôte SSH ou clé privée manquant." >&2
             exit 1

@@ -77,7 +77,7 @@ function ParentHome() {
                   <Avatar id={person.id} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
-                    <span className="person-sub">{person.age} ans <Badge person={person} /></span>
+                    <span className="person-sub">{person.age > 0 ? `${person.age} ans ` : ''}<Badge person={person} /></span>
                   </span>
                 </button>
               ))}
@@ -98,7 +98,7 @@ function ParentHome() {
                   <Avatar id={person.id} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
-                    <span className="person-sub">{person.age} ans <Badge person={person} /></span>
+                    <span className="person-sub">{person.age > 0 ? `${person.age} ans ` : ''}<Badge person={person} /></span>
                   </span>
                 </Link>
               ))}

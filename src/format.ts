@@ -1,7 +1,7 @@
 import type { ExpenseCategory, PayStatus, Person, SavingsKind } from './types';
 
 export function fullName(p: Pick<Person, 'firstName' | 'lastName'>) {
-  return `${p.firstName} ${p.lastName}`;
+  return `${p.firstName} ${p.lastName}`.trim();
 }
 
 export function money(value: number) {

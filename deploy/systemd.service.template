@@ -12,6 +12,8 @@ Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://0.0.0.0:__LISTEN_PORT__
 Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=ConnectionStrings__Sqlite=Filename=__APP_ROOT__/data/famirepere.db
+Environment=SeedAdmin__Email=__SEED_EMAIL__
+Environment=SeedAdmin__Password=__SEED_PASSWORD__
 StandardOutput=append:__APP_ROOT__/data/service.log
 StandardError=append:__APP_ROOT__/data/service.log
 

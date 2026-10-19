@@ -83,6 +83,16 @@ public sealed class FamilyDb
         return person;
     }
 
+    public void EnsureSeedAdmin(string email, string password)
+    {
+        var username = email.Trim().ToLowerInvariant();
+        if (username.Length < 3 || password.Length < 8) return;
+        using var db = Open();
+        if (db.QueryOne("SELECT id FROM people WHERE username = $u", ("$u", username)) is not null) return;
+        var person = NewPerson("Administrateur", "", 0, "m", "parent", "Administrateur", true, true, username, "#3b82f6", "#e7f0ff");
+        InsertPerson(db, person, Hash(password));
+    }
+
     public Person CreateMember(Person actor, string firstName, string lastName, int age, string gender, string role, string relation, string username, string password)
     {
         if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut créer un membre.");

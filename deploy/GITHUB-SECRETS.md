@@ -15,5 +15,9 @@ Le workflow `.github/workflows/deploy-production.yml` publie l’interface et l�
 | --- | --- |
 | `FAMIREPERE_SSH_USER` | `ubuntu` |
 | `FAMIREPERE_SSH_PORT` | `22` |
+| `FAMIREPERE_ADMIN_EMAIL` | aucun compte semé |
+| `FAMIREPERE_ADMIN_PASSWORD` | aucun compte semé |
 
-Le service systemd s’appelle `famirepere` et écoute le port `55091`. Placez un reverse proxy HTTPS devant ce port. Le premier visiteur crée le compte du père ; aucun mot de passe n’est semé.
+Si les deux secrets d’administration sont présents, le premier démarrage crée le super administrateur avec cette adresse comme identifiant. Aucun nom ni aucune date de naissance n’est enregistré. Le mot de passe reste dans les secrets GitHub.
+
+Le service systemd s’appelle `famirepere` et écoute le port `55091`. Placez un reverse proxy HTTPS devant ce port.
