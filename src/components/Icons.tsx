@@ -25,7 +25,12 @@ export type IconName =
   | 'car'
   | 'bell'
   | 'lock'
-  | 'check';
+  | 'check'
+  | 'pencil'
+  | 'close'
+  | 'camera'
+  | 'key'
+  | 'crown';
 
 const glyphs: Record<IconName, ReactNode> = {
   home: <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5.2v-6.2H10.2V21H5a1 1 0 0 1-1-1z" />,
@@ -147,6 +152,31 @@ const glyphs: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d="M5 12.5 9.2 17 19 7" />,
+  pencil: (
+    <>
+      <path d="M4 20h4L19 9l-4-4L4 16z" />
+      <path d="M13.5 6.5 17.5 10.5" />
+    </>
+  ),
+  close: <path d="M6 6l12 12M18 6 6 18" />,
+  camera: (
+    <>
+      <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
+      <circle cx="12" cy="13.5" r="3.2" />
+    </>
+  ),
+  key: (
+    <>
+      <circle cx="8" cy="14" r="3.5" />
+      <path d="M11 14h9v2.2h-2.2V18H15.5v-1.8H11" />
+    </>
+  ),
+  crown: (
+    <>
+      <path d="M4 17h16l-1.2-9-4.3 3.2L12 6l-2.5 5.2L5.2 8z" />
+      <path d="M5 17h14v2H5z" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

@@ -8,7 +8,7 @@ import { AddDialog } from './AddDialog';
 
 const NAV: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
   { to: '/', label: 'Accueil', icon: 'home', match: (p) => p === '/' },
-  { to: '/famille', label: 'Famille', icon: 'users', match: (p) => p.startsWith('/famille') },
+  { to: '/famille', label: 'Ma famille', icon: 'users', match: (p) => p.startsWith('/famille') },
   { to: '/calendrier', label: 'Calendrier', icon: 'calendar', match: (p) => p.startsWith('/calendrier') },
   { to: '/finances/budget', label: 'Finances', icon: 'wallet', match: (p) => p.startsWith('/finances') },
   { to: '/documents', label: 'Documents', icon: 'file', match: (p) => p.startsWith('/documents') },
@@ -77,7 +77,7 @@ export function Shell() {
             <p>{heading.sub}</p>
           </div>
           <div className="actions">
-            {(viewer.role === 'parent' || viewer.role === 'enfant') && (
+            {(viewer.role === 'parent' || viewer.role === 'enfant') && !pathname.startsWith('/famille') && (
               <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" size={18} />
                 Ajouter
@@ -100,7 +100,7 @@ function titleFor(pathname: string, people: { id: string; firstName: string; las
     const person = people.find((p) => p.id === pathname.split('/')[2]);
     if (person) return { title: fullName(person), sub: person.relation };
   }
-  if (pathname.startsWith('/famille')) return { title: 'Famille', sub: 'Les personnes du foyer' };
+  if (pathname.startsWith('/famille')) return { title: 'Ma famille', sub: 'Les membres de votre foyer et leurs accès' };
   if (pathname.startsWith('/calendrier')) return { title: 'Calendrier partagé', sub: 'Une couleur par membre' };
   if (pathname.startsWith('/finances')) return { title: 'Finances', sub: 'Budget, épargne, tontines et assurances' };
   if (pathname.startsWith('/documents')) return { title: 'Documents familiaux', sub: 'Factures, scolarité, assurances et autorisations' };

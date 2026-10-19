@@ -169,7 +169,7 @@ app.MapPost("/api/members/{id}/profile", (HttpContext ctx, string id, MemberUpda
 {
     var actor = Parent(ctx);
     RequireId(id);
-    db.UpdateMember(actor, id, body.FirstName, body.Role, body.Relation, body.Avatar, body.Username, body.Password);
+    db.UpdateMember(actor, id, body.FirstName, body.LastName, body.Role, body.Relation, body.Avatar, body.Username, body.Password);
     return Results.Ok(db.View(actor));
 });
 
@@ -401,6 +401,7 @@ sealed class SetupBody
 sealed class MemberUpdate
 {
     public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
     public string Role { get; set; } = "enfant";
     public string Relation { get; set; } = "";
     public string Avatar { get; set; } = "";

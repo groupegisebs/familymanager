@@ -122,12 +122,13 @@ public sealed class FamilyDb
         db.Execute("UPDATE people SET avatar = $a WHERE id = $id", ("$a", avatar), ("$id", personId));
     }
 
-    public void UpdateMember(Person actor, string personId, string firstName, string role, string relation, string avatar, string username, string password)
+    public void UpdateMember(Person actor, string personId, string firstName, string lastName, string role, string relation, string avatar, string username, string password)
     {
         if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut modifier un membre.");
         if (role is not ("parent" or "enfant" or "proche")) throw new InvalidOperation("Rôle inconnu.");
         if (!IsAvatar(avatar)) throw new InvalidOperation("Choisissez une icône.");
         if (string.IsNullOrWhiteSpace(firstName) || firstName.Trim().Length > 60) throw new InvalidOperation("Indiquez le prénom.");
+        if (lastName.Trim().Length > 60) throw new InvalidOperation("Le nom est trop long.");
         if (string.IsNullOrWhiteSpace(relation) || relation.Trim().Length > 60) throw new InvalidOperation("Indiquez le lien familial.");
         var login = username.Trim().ToLowerInvariant();
         if (login.Length < 3 || login.Length > 80 || login.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '@' or '.' or '_' or '-')))
@@ -144,20 +145,20 @@ public sealed class FamilyDb
         {
             db.Execute("""
                 UPDATE people
-                SET first_name = $fn, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h, password_hash = $pw
+                SET first_name = $fn, last_name = $ln, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h, password_hash = $pw
                 WHERE id = $id
                 """,
-                ("$fn", firstName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
+                ("$fn", firstName.Trim()), ("$ln", lastName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
                 ("$u", login), ("$h", household), ("$pw", Hash(password)), ("$id", personId));
         }
         else
         {
             db.Execute("""
                 UPDATE people
-                SET first_name = $fn, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h
+                SET first_name = $fn, last_name = $ln, role = $role, relation = $rel, avatar = $avatar, username = $u, household = $h
                 WHERE id = $id
                 """,
-                ("$fn", firstName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
+                ("$fn", firstName.Trim()), ("$ln", lastName.Trim()), ("$role", role), ("$rel", relation.Trim()), ("$avatar", avatar),
                 ("$u", login), ("$h", household), ("$id", personId));
         }
     }
