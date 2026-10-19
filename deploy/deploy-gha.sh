@@ -10,8 +10,10 @@ set -euo pipefail
 : "${HEALTH_URL:?HEALTH_URL manquant}"
 
 SSH_OPTS=(-p "$SSH_PORT" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes)
+SCP_OPTS=(-P "$SSH_PORT" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes)
 if [ -n "${SSH_KEY_PATH:-}" ]; then
   SSH_OPTS+=(-i "$SSH_KEY_PATH")
+  SCP_OPTS+=(-i "$SSH_KEY_PATH")
 fi
 
 remote() { ssh "${SSH_OPTS[@]}" "$SSH_USER@$SSH_HOST" "$@"; }
@@ -25,7 +27,7 @@ if remote "test -d '$APP_ROOT/app'"; then
 fi
 
 echo "Copie de la publication"
-scp "${SSH_OPTS[@]}" -r publish "$SSH_USER@$SSH_HOST:/tmp/famirepere-publish"
+scp "${SCP_OPTS[@]}" -r publish "$SSH_USER@$SSH_HOST:/tmp/famirepere-publish"
 remote "sudo systemctl stop '$SERVICE_NAME' || true"
 remote "rsync -a --delete --exclude appsettings.Production.json /tmp/famirepere-publish/ '$APP_ROOT/app/'"
 remote "rm -rf /tmp/famirepere-publish"
