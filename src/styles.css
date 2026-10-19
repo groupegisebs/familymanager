@@ -38,15 +38,9 @@ a { color: inherit; }
   top: 0;
   height: 100vh;
 }
-.brand { display: flex; gap: 10px; align-items: flex-start; padding: 0 8px 22px; }
-.brand-mark {
-  width: 42px; height: 42px; border-radius: 14px;
-  display: grid; place-items: center;
-  flex: none; overflow: hidden;
-}
-.brand-mark img { width: 42px; height: 42px; display: block; object-fit: cover; }
-.brand-text strong { display: block; font-size: 20px; letter-spacing: -0.04em; }
-.brand-text small { display: block; margin-top: 2px; max-width: 148px; font-size: 11px; line-height: 1.35; opacity: .78; font-weight: 500; }
+.brand { display: grid; gap: 8px; padding: 0 4px 22px; }
+.brand-logo { width: 100%; height: 64px; object-fit: contain; object-position: left center; background: #fff; border-radius: 14px; }
+.brand small { display: block; max-width: 210px; font-size: 11px; line-height: 1.35; opacity: .78; font-weight: 500; }
 .nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
   display: flex; align-items: center; gap: 12px;
@@ -297,9 +291,8 @@ a { color: inherit; }
     url('/famirepere-maison.jpg') center / cover no-repeat;
 }
 .auth-card { width: min(460px, 100%); display: grid; gap: 12px; padding: 28px; background: rgba(255, 255, 255, 0.94); }
-.auth-brand { display: flex; align-items: center; gap: 10px; margin: 0; }
-.auth-brand img { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; }
-.auth-brand strong { font-size: 20px; letter-spacing: -0.04em; }
+.auth-brand { margin: 0; }
+.auth-brand img { display: block; width: min(280px, 100%); height: 72px; object-fit: contain; object-position: left center; }
 .form-error { color: #b42318; font-weight: 700; margin: 0; }
 .who { cursor: default; }
 

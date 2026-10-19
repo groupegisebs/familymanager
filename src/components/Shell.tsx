@@ -29,13 +29,8 @@ export function Shell() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">
-            <img src="/famirepere-logo.jpg" alt="" width={42} height={42} />
-          </span>
-          <span className="brand-text">
-            <strong>FamiRepère</strong>
-            <small>Une famille mieux organisée au quotidien</small>
-          </span>
+          <img className="brand-logo" src="/famirepere-logo-complet.jpg" alt="FamiRepère" />
+          <small>Une famille mieux organisée au quotidien</small>
         </div>
         <nav className="nav" aria-label="Navigation">
           {NAV.map((item) => (
