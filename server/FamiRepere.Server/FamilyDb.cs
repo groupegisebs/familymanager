@@ -59,6 +59,8 @@ public sealed class FamilyDb
             "CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (kind, id))",
             "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
         }) db.Execute(sql);
+        var hasAvatar = db.Query("PRAGMA table_info(people)").Any(column => string.Equals(column["name"]?.ToString(), "avatar", StringComparison.OrdinalIgnoreCase));
+        if (!hasAvatar) db.Execute("ALTER TABLE people ADD COLUMN avatar TEXT NOT NULL DEFAULT ''");
     }
 
     SqliteConnection Open()
@@ -95,18 +97,32 @@ public sealed class FamilyDb
         InsertPerson(db, person, Hash(password));
     }
 
-    public Person CreateMember(Person actor, string firstName, string lastName, int age, string gender, string role, string relation, string username, string password)
+    public Person CreateMember(Person actor, string firstName, string lastName, int age, string gender, string role, string relation, string username, string password, string avatar)
     {
         if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut créer un membre.");
         if (role is not ("parent" or "enfant" or "proche")) throw new InvalidOperation("Rôle inconnu.");
         if (gender is not ("" or "f" or "m")) throw new InvalidOperation("Sexe inconnu.");
+        if (!IsAvatar(avatar)) throw new InvalidOperation("Choisissez une icône.");
         using var db = Open();
         var count = db.QueryInt("SELECT COUNT(*) FROM people");
         var (color, soft) = Palette[(count - 1) % Palette.Length];
         var person = NewPerson(firstName, lastName, age, gender, role, relation, role != "proche", false, username, color, soft);
+        person.Avatar = avatar;
         InsertPerson(db, person, Hash(password));
         return person;
     }
+
+    public void SetAvatar(Person actor, string personId, string avatar)
+    {
+        if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut choisir l’icône.");
+        if (!IsAvatar(avatar)) throw new InvalidOperation("Icône inconnue.");
+        using var db = Open();
+        if (db.QueryOne("SELECT id FROM people WHERE id = $id", ("$id", personId)) is null)
+            throw new InvalidOperation("Ce membre est introuvable.");
+        db.Execute("UPDATE people SET avatar = $a WHERE id = $id", ("$a", avatar), ("$id", personId));
+    }
+
+    public static bool IsAvatar(string avatar) => avatar is "thomas" or "sophie" or "emma" or "lucas" or "chloe" or "camille";
 
     public string OpenSession(string username, string password)
     {
@@ -364,13 +380,13 @@ public sealed class FamilyDb
     static void InsertPerson(SqliteConnection db, Person person, string hash)
     {
         db.Execute("""
-            INSERT INTO people (id, first_name, last_name, age, gender, role, relation, color, soft, household, is_super_admin, username, password_hash, mask_notifications)
-            VALUES ($id, $fn, $ln, $age, $g, $role, $rel, $c, $s, $h, $admin, $u, $pw, 1)
+            INSERT INTO people (id, first_name, last_name, age, gender, role, relation, color, soft, household, is_super_admin, username, password_hash, mask_notifications, avatar)
+            VALUES ($id, $fn, $ln, $age, $g, $role, $rel, $c, $s, $h, $admin, $u, $pw, 1, $avatar)
             """,
             ("$id", person.Id), ("$fn", person.FirstName), ("$ln", person.LastName), ("$age", person.Age),
             ("$g", person.Gender), ("$role", person.Role), ("$rel", person.Relation), ("$c", person.Color),
             ("$s", person.Soft), ("$h", person.Household ? 1 : 0), ("$admin", person.IsSuperAdmin ? 1 : 0),
-            ("$u", person.Username), ("$pw", hash));
+            ("$u", person.Username), ("$pw", hash), ("$avatar", person.Avatar));
     }
 
     static Person MapPerson(Dictionary<string, object?> row) => new()
@@ -387,6 +403,7 @@ public sealed class FamilyDb
         Household = Convert.ToInt32(row["household"]) == 1,
         IsSuperAdmin = Convert.ToInt32(row["is_super_admin"]) == 1,
         Username = S(row, "username"),
+        Avatar = row.TryGetValue("avatar", out var avatar) ? avatar?.ToString() ?? "" : "",
         MaskNotifications = Convert.ToInt32(row["mask_notifications"]) == 1,
     };
 

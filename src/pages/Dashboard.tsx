@@ -74,7 +74,7 @@ function ParentHome() {
             <div className="members">
               {members.map((person) => (
                 <button key={person.id} type="button" className={selected === person.id ? 'person on' : 'person'} onClick={() => setSelected(person.id)}>
-                  <Avatar id={person.id} />
+                  <Avatar id={person.id} look={person.avatar} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
                     <span className="person-sub"><Badge person={person} /></span>
@@ -95,7 +95,7 @@ function ParentHome() {
             <div className="members">
               {members.map((person) => (
                 <Link key={person.id} to={`/famille/${person.id}`} className="person">
-                  <Avatar id={person.id} />
+                  <Avatar id={person.id} look={person.avatar} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
                     <span className="person-sub"><Badge person={person} /></span>
@@ -415,7 +415,7 @@ function ChildHome() {
   return (
     <div className={viewer.age < 8 ? 'stack simple' : 'stack'}>
       <section className="card hero-inline">
-        <Avatar id={viewer.id} size={72} />
+        <Avatar id={viewer.id} look={viewer.avatar} size={72} />
         <div>
           <p className="kicker">Bonjour</p>
           <h2>{fullName(viewer)}</h2>
@@ -478,7 +478,7 @@ function ProcheHome() {
   return (
     <div className="stack">
       <section className="card hero-inline">
-        <Avatar id={viewer.id} size={72} />
+        <Avatar id={viewer.id} look={viewer.avatar} size={72} />
         <div>
           <p className="kicker">Bonjour</p>
           <h2>{fullName(viewer)}</h2>

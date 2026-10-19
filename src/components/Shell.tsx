@@ -43,7 +43,7 @@ export function Shell() {
         <div className="side-spacer" />
         <div className="who-wrap">
           <div className="who">
-            <Avatar id={viewer.id} size={36} />
+            <Avatar id={viewer.id} look={viewer.avatar} size={36} />
             <span>
               <strong>{fullName(viewer)}</strong>
               <small>{viewer.isSuperAdmin ? 'Père · super administrateur' : viewer.role === 'parent' ? 'Parent' : viewer.role === 'enfant' ? 'Enfant' : 'Proche autorisé'}</small>

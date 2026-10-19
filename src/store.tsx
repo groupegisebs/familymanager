@@ -12,6 +12,7 @@ type MemberInput = {
   relation: string;
   username: string;
   password: string;
+  avatar: string;
 };
 
 type Store = {
@@ -26,6 +27,7 @@ type Store = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   createMember: (body: MemberInput) => Promise<void>;
+  setAvatar: (id: string, avatar: string) => Promise<void>;
   toggleMask: () => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   advance: (ref: DueRef) => Promise<void>;
@@ -127,6 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPhase('login');
     },
     createMember: (body) => run('/api/members', body),
+    setAvatar: (id, avatar) => run(`/api/members/${id}/avatar`, { avatar }),
     toggleMask: () => run('/api/settings/mask', {}),
     toggleTask: (id) => run(`/api/tasks/${id}/toggle`, {}),
     advance: (ref) => run('/api/payments/advance', ref),

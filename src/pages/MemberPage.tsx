@@ -41,7 +41,7 @@ export function MemberOverview({ personId }: { personId: string }) {
   return (
     <div className="stack">
       <section className="hero" style={{ borderColor: person.color }}>
-        <Avatar id={person.id} size={88} />
+        <Avatar id={person.id} look={person.avatar} size={88} />
         <div>
           <p className="kicker" style={{ color: person.color }}>{person.relation}</p>
           <h2>{fullName(person)}</h2>

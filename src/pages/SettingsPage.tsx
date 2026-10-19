@@ -10,7 +10,7 @@ export function SettingsPage() {
         <header className="card-head"><h2>Compte connecté</h2></header>
         <div className="account-list">
           <div className="account on">
-            <Avatar id={viewer.id} size={44} />
+            <Avatar id={viewer.id} look={viewer.avatar} size={44} />
             <span>
               <strong>{fullName(viewer)}</strong>
               <small>{viewer.username} · {viewer.isSuperAdmin ? 'Père, super administrateur' : viewer.relation}</small>

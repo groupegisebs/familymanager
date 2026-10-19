@@ -198,7 +198,11 @@ a { color: inherit; }
   background: white; border-radius: 22px; box-shadow: var(--shadow); padding: 22px 16px;
   text-decoration: none; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
 }
+.family-tile a { text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .family-tile h2 { margin: 8px 0 0; font-size: 18px; }
+.icon-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-picker button { border: 2px solid transparent; background: #f6f4fb; border-radius: 50%; padding: 2px; cursor: pointer; line-height: 0; }
+.icon-picker button.on { border-color: var(--primary); }
 .family-tile p { margin: 0; color: var(--muted); }
 
 .hero, .hero-inline { display: flex; gap: 16px; align-items: center; background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; border-top: 4px solid var(--primary); }
@@ -275,6 +279,7 @@ a { color: inherit; }
 .kind strong, .kind small { display: block; }
 .kind small { color: var(--muted); font-size: 12px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-wide { grid-column: 1 / -1; }
 .field, .checkline { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: #4c4668; }
 .span-2 { grid-column: span 2; }
 .field input, .field select, .field textarea { border: 1px solid #e6e1f0; background: #fbfbfe; border-radius: 12px; padding: 11px 12px; font-weight: 600; }

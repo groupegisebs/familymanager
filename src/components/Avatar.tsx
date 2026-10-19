@@ -15,22 +15,50 @@ const LOOKS: Record<string, Look> = {
 };
 
 const LOOK_LIST = Object.values(LOOKS);
+export const AVATARS = LOOK_LIST.map((look) => look.kind);
 
-export function Avatar({ id, size = 52 }: { id: string; size?: number }) {
-  const look = LOOKS[id] ?? LOOK_LIST[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % LOOK_LIST.length];
+const LABELS: Record<Look['kind'], string> = {
+  thomas: 'Homme',
+  sophie: 'Femme',
+  emma: 'Fille',
+  lucas: 'Garçon',
+  chloe: 'Fille aux couettes',
+  camille: 'Cheveux clairs',
+};
+
+export function avatarKey(id: string, look?: string) {
+  if (look && LOOKS[look]) return look;
+  return LOOK_LIST[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % LOOK_LIST.length].kind;
+}
+
+export function Avatar({ id, look, size = 52 }: { id: string; look?: string; size?: number }) {
+  const chosen = LOOKS[avatarKey(id, look)];
   return (
     <svg className="avatar" width={size} height={size} viewBox="0 0 80 80" aria-hidden="true">
       <circle cx="40" cy="40" r="40" fill="#fff" />
-      <circle cx="40" cy="40" r="38" fill={idColor(id)} />
-      <path d="M12 86c6-20 16-30 28-30s22 10 28 30" fill={look.shirt} />
-      <circle cx="40" cy="36" r="16" fill={look.skin} />
-      {hair(look)}
+      <circle cx="40" cy="40" r="38" fill={idColor(avatarKey(id, look))} />
+      <path d="M12 86c6-20 16-30 28-30s22 10 28 30" fill={chosen.shirt} />
+      <circle cx="40" cy="36" r="16" fill={chosen.skin} />
+      {hair(chosen)}
       <ellipse cx="33.5" cy="36" rx="1.5" ry="1.8" fill="#3a2a28" />
       <ellipse cx="46.5" cy="36" rx="1.5" ry="1.8" fill="#3a2a28" />
       <path d="M35.5 42.5c1.4 1.6 3.2 2.4 4.5 2.4s3.1-.8 4.5-2.4" fill="none" stroke="#c47b6a" strokeWidth="1.4" strokeLinecap="round" />
       <ellipse cx="30" cy="40" rx="2.2" ry="1.2" fill="#f3b0a0" opacity="0.7" />
       <ellipse cx="50" cy="40" rx="2.2" ry="1.2" fill="#f3b0a0" opacity="0.7" />
     </svg>
+  );
+}
+
+export function IconPicker({ id, value, onPick }: { id: string; value?: string; onPick: (avatar: string) => void }) {
+  const current = avatarKey(id, value);
+  return (
+    <div className="icon-picker" role="radiogroup" aria-label="Icône">
+      {LOOK_LIST.map((look) => (
+        <button key={look.kind} type="button" className={look.kind === current ? 'on' : ''} aria-label={LABELS[look.kind]} aria-pressed={look.kind === current} onClick={() => onPick(look.kind)}>
+          <Avatar id={look.kind} look={look.kind} size={40} />
+        </button>
+      ))}
+    </div>
   );
 }
 

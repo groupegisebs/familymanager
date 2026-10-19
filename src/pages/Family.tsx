@@ -2,22 +2,25 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { household } from '../access';
 import { fullName } from '../format';
-import { Avatar } from '../components/Avatar';
+import { Avatar, IconPicker } from '../components/Avatar';
 import { Badge, useFamily } from '../components/ui';
 
 export function FamilyPage() {
-  const { state, viewer } = useFamily();
+  const { state, viewer, setAvatar, notify } = useFamily();
   const members = household(state);
   const proches = state.people.filter((p) => !p.household);
   return (
     <div className="stack">
       <section className="family-grid">
         {members.map((person) => (
-          <Link key={person.id} to={`/famille/${person.id}`} className="family-tile">
-            <Avatar id={person.id} size={84} />
-            <h2>{fullName(person)}</h2>
-            <Badge person={person} />
-          </Link>
+          <article key={person.id} className="family-tile">
+            <Link to={`/famille/${person.id}`}>
+              <Avatar id={person.id} look={person.avatar} size={84} />
+              <h2>{fullName(person)}</h2>
+              <Badge person={person} />
+            </Link>
+            {viewer.isSuperAdmin && <IconPicker id={person.id} value={person.avatar} onPick={(avatar) => void setAvatar(person.id, avatar).catch(() => notify('Icône non enregistrée.'))} />}
+          </article>
         ))}
       </section>
       {viewer.isSuperAdmin && <CreateMember />}
@@ -27,12 +30,15 @@ export function FamilyPage() {
           <div className="family-grid compact">
             {proches.length === 0 && <p className="empty">Aucun proche pour le moment.</p>}
             {proches.map((person) => (
-              <Link key={person.id} to={`/famille/${person.id}`} className="family-tile">
-                <Avatar id={person.id} size={64} />
-                <h2>{fullName(person)}</h2>
-                <p>Accès limité aux éléments partagés</p>
-                <Badge person={person} />
-              </Link>
+              <article key={person.id} className="family-tile">
+                <Link to={`/famille/${person.id}`}>
+                  <Avatar id={person.id} look={person.avatar} size={64} />
+                  <h2>{fullName(person)}</h2>
+                  <p>Accès limité aux éléments partagés</p>
+                  <Badge person={person} />
+                </Link>
+                {viewer.isSuperAdmin && <IconPicker id={person.id} value={person.avatar} onPick={(avatar) => void setAvatar(person.id, avatar).catch(() => notify('Icône non enregistrée.'))} />}
+              </article>
             ))}
           </div>
         </section>
@@ -43,7 +49,7 @@ export function FamilyPage() {
 
 function CreateMember() {
   const { createMember, notify } = useFamily();
-  const [form, setForm] = useState({ firstName: '', role: 'enfant' as 'parent' | 'enfant' | 'proche', relation: 'Enfant', username: '', password: '' });
+  const [form, setForm] = useState({ firstName: '', role: 'enfant' as 'parent' | 'enfant' | 'proche', relation: 'Enfant', username: '', password: '', avatar: 'emma' });
   const [error, setError] = useState('');
 
   async function submit(event: FormEvent) {
@@ -63,6 +69,7 @@ function CreateMember() {
       <header className="card-head"><h2>Nouveau membre</h2></header>
       <p className="hint">Seul le père crée les comptes. Le membre choisit ensuite son identifiant pour se connecter.</p>
       <form className="form-grid" onSubmit={submit}>
+        <label className="field field-wide">Icône<IconPicker id="nouveau" value={form.avatar} onPick={(avatar) => setForm({ ...form, avatar })} /></label>
         <label className="field">Prénom<input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></label>
         <label className="field">Rôle
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'parent' | 'enfant' | 'proche' })}>

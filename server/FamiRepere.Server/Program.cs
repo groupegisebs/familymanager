@@ -152,8 +152,16 @@ app.MapPost("/api/members", (HttpContext ctx, MemberBody body) =>
     var actor = Parent(ctx);
     ValidateAccount(body.FirstName, body.LastName, body.Age, body.Username, body.Password);
     if (string.IsNullOrWhiteSpace(body.Relation)) throw new InvalidOperation("Indiquez le lien familial.");
-    db.CreateMember(actor, body.FirstName, body.LastName, body.Age, body.Gender, body.Role, body.Relation, body.Username, body.Password);
+    db.CreateMember(actor, body.FirstName, body.LastName, body.Age, body.Gender, body.Role, body.Relation, body.Username, body.Password, body.Avatar);
     if (body.Role == "parent") Tell(actor, "Nouveau parent", $"{body.FirstName.Trim()} {body.LastName.Trim()} peut maintenant se connecter.");
+    return Results.Ok(db.View(actor));
+});
+
+app.MapPost("/api/members/{id}/avatar", (HttpContext ctx, string id, AvatarBody body) =>
+{
+    var actor = Parent(ctx);
+    RequireId(id);
+    db.SetAvatar(actor, id, body.Avatar);
     return Results.Ok(db.View(actor));
 });
 
@@ -382,6 +390,11 @@ sealed class SetupBody
     public string Password { get; set; } = "";
 }
 
+sealed class AvatarBody
+{
+    public string Avatar { get; set; } = "";
+}
+
 sealed class LoginBody
 {
     public string Username { get; set; } = "";
@@ -398,4 +411,5 @@ sealed class MemberBody
     public string Relation { get; set; } = "";
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
+    public string Avatar { get; set; } = "";
 }

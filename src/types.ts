@@ -16,6 +16,7 @@ export type Person = {
   household: boolean;
   isSuperAdmin: boolean;
   username: string;
+  avatar: string;
 };
 
 export type Income = {

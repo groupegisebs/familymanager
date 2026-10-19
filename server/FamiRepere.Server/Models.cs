@@ -14,6 +14,7 @@ public sealed class Person
     public bool Household { get; set; } = true;
     public bool IsSuperAdmin { get; set; }
     public string Username { get; set; } = "";
+    public string Avatar { get; set; } = "";
     public bool MaskNotifications { get; set; } = true;
 }
 
