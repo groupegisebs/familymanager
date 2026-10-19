@@ -210,8 +210,8 @@ void RequireId(string id)
 
 void ValidateAccount(string first, string last, int age, string username, string password)
 {
-    if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(last)) throw new InvalidOperation("Indiquez le prénom et le nom.");
-    if (age < 0 || age > 120) throw new InvalidOperation("Indiquez l’âge.");
+    if (string.IsNullOrWhiteSpace(first)) throw new InvalidOperation("Indiquez le prénom.");
+    if (age < 0 || age > 120) throw new InvalidOperation("Âge invalide.");
     if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3) throw new InvalidOperation("L’identifiant doit contenir au moins 3 caractères.");
     if (password.Length < 8) throw new InvalidOperation("Le mot de passe doit contenir au moins 8 caractères.");
 }
@@ -237,7 +237,7 @@ sealed class MemberBody
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
     public int Age { get; set; }
-    public string Gender { get; set; } = "f";
+    public string Gender { get; set; } = "";
     public string Role { get; set; } = "enfant";
     public string Relation { get; set; } = "";
     public string Username { get; set; } = "";

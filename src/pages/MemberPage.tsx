@@ -45,7 +45,6 @@ export function MemberOverview({ personId }: { personId: string }) {
         <div>
           <p className="kicker" style={{ color: person.color }}>{person.relation}</p>
           <h2>{fullName(person)}</h2>
-          {person.age > 0 && <p>{person.age} ans</p>}
         </div>
         <Badge person={person} />
       </section>

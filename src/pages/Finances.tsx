@@ -326,7 +326,7 @@ function LimitedMoney() {
       {policies.map((policy) => (
         <article key={policy.id} className="card item">
           <strong>{policy.type}</strong>
-          <p>{canSeePolicyDetails(viewer) ? policy.policyNumber : viewer.gender === 'f' ? 'Vous êtes couverte par ce contrat.' : 'Vous êtes couvert par ce contrat.'}</p>
+          <p>{canSeePolicyDetails(viewer) ? policy.policyNumber : 'Vous êtes couvert par ce contrat.'}</p>
           <p>Souscripteur : {name(policy.subscriberId)}</p>
         </article>
       ))}

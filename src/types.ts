@@ -8,7 +8,7 @@ export type Person = {
   firstName: string;
   lastName: string;
   age: number;
-  gender: 'f' | 'm';
+  gender: 'f' | 'm' | '';
   role: Role;
   relation: string;
   color: string;

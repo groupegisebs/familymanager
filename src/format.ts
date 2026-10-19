@@ -63,7 +63,9 @@ export function formatMonthYear(year: number, monthIndex: number) {
 }
 
 export function companionWord(p: Person) {
-  return p.gender === 'f' ? 'Accompagnatrice' : 'Accompagnateur';
+  if (p.gender === 'f') return 'Accompagnatrice';
+  if (p.gender === 'm') return 'Accompagnateur';
+  return 'Accompagnant';
 }
 
 export function statusLabel(status: PayStatus) {

@@ -16,7 +16,6 @@ export function FamilyPage() {
           <Link key={person.id} to={`/famille/${person.id}`} className="family-tile">
             <Avatar id={person.id} size={84} />
             <h2>{fullName(person)}</h2>
-            {person.age > 0 && <p>{person.age} ans</p>}
             <Badge person={person} />
           </Link>
         ))}
@@ -44,16 +43,16 @@ export function FamilyPage() {
 
 function CreateMember() {
   const { createMember, notify } = useFamily();
-  const [form, setForm] = useState({ firstName: '', lastName: '', age: '10', gender: 'f' as 'f' | 'm', role: 'enfant' as 'parent' | 'enfant' | 'proche', relation: 'Enfant', username: '', password: '' });
+  const [form, setForm] = useState({ firstName: '', role: 'enfant' as 'parent' | 'enfant' | 'proche', relation: 'Enfant', username: '', password: '' });
   const [error, setError] = useState('');
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
     try {
-      await createMember({ ...form, age: Number(form.age) });
-      notify(`${form.firstName} ${form.lastName} peut maintenant se connecter.`);
-      setForm({ ...form, firstName: '', lastName: '', username: '', password: '' });
+      await createMember({ ...form, lastName: '', age: 0, gender: '' });
+      notify(`${form.firstName} peut maintenant se connecter.`);
+      setForm({ ...form, firstName: '', username: '', password: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Création impossible.');
     }
@@ -65,14 +64,6 @@ function CreateMember() {
       <p className="hint">Seul le père crée les comptes. Le membre choisit ensuite son identifiant pour se connecter.</p>
       <form className="form-grid" onSubmit={submit}>
         <label className="field">Prénom<input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></label>
-        <label className="field">Nom<input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required /></label>
-        <label className="field">Âge<input type="number" min={0} max={120} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} required /></label>
-        <label className="field">Sexe
-          <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value as 'f' | 'm' })}>
-            <option value="f">Féminin</option>
-            <option value="m">Masculin</option>
-          </select>
-        </label>
         <label className="field">Rôle
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'parent' | 'enfant' | 'proche' })}>
             <option value="parent">Parent</option>

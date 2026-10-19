@@ -102,9 +102,9 @@ export function Shell() {
 function titleFor(pathname: string, people: { id: string; firstName: string; lastName: string; age: number; relation: string }[]) {
   if (pathname.startsWith('/famille/')) {
     const person = people.find((p) => p.id === pathname.split('/')[2]);
-    if (person) return { title: fullName(person), sub: person.age > 0 ? `${person.age} ans · ${person.relation}` : person.relation };
+    if (person) return { title: fullName(person), sub: person.relation };
   }
-  if (pathname.startsWith('/famille')) return { title: 'Famille', sub: 'Chaque membre avec son prénom et son nom' };
+  if (pathname.startsWith('/famille')) return { title: 'Famille', sub: 'Les personnes du foyer' };
   if (pathname.startsWith('/calendrier')) return { title: 'Calendrier partagé', sub: 'Une couleur par membre' };
   if (pathname.startsWith('/finances')) return { title: 'Finances', sub: 'Budget, épargne, tontines et assurances' };
   if (pathname.startsWith('/documents')) return { title: 'Documents familiaux', sub: 'Factures, scolarité, assurances et autorisations' };

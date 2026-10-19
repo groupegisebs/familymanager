@@ -3,7 +3,7 @@ import { useApp } from '../store';
 
 export function SetupPage() {
   const { setup, error } = useApp();
-  const [form, setForm] = useState({ firstName: '', lastName: '', age: '40', username: '', password: '' });
+  const [form, setForm] = useState({ firstName: '', username: '', password: '' });
   const [local, setLocal] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -12,7 +12,7 @@ export function SetupPage() {
     setBusy(true);
     setLocal('');
     try {
-      await setup({ ...form, age: Number(form.age) });
+      await setup({ ...form, lastName: '', age: 0 });
     } catch (err) {
       setLocal(err instanceof Error ? err.message : 'Création impossible.');
     } finally {
@@ -27,8 +27,6 @@ export function SetupPage() {
         <h1>Créer le père du foyer</h1>
         <p className="hint">Le premier compte est le super administrateur. C’est lui qui crée ensuite chaque membre de la famille.</p>
         <label className="field">Prénom<input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></label>
-        <label className="field">Nom<input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required /></label>
-        <label className="field">Âge<input type="number" min={18} max={120} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} required /></label>
         <label className="field">Identifiant<input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} autoComplete="username" required /></label>
         <label className="field">Mot de passe<input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" minLength={8} required /></label>
         {(local || error) && <p className="form-error">{local || error}</p>}

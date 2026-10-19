@@ -97,7 +97,7 @@ public sealed class FamilyDb
     {
         if (!actor.IsSuperAdmin) throw new InvalidOperation("Seul le père peut créer un membre.");
         if (role is not ("parent" or "enfant" or "proche")) throw new InvalidOperation("Rôle inconnu.");
-        if (gender is not ("f" or "m")) throw new InvalidOperation("Indiquez le sexe.");
+        if (gender is not ("" or "f" or "m")) throw new InvalidOperation("Sexe inconnu.");
         using var db = Open();
         var count = db.QueryInt("SELECT COUNT(*) FROM people");
         var (color, soft) = Palette[(count - 1) % Palette.Length];

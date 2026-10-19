@@ -7,7 +7,7 @@ type MemberInput = {
   firstName: string;
   lastName: string;
   age: number;
-  gender: 'f' | 'm';
+  gender: 'f' | 'm' | '';
   role: 'parent' | 'enfant' | 'proche';
   relation: string;
   username: string;

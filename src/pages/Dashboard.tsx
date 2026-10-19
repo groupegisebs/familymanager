@@ -77,7 +77,7 @@ function ParentHome() {
                   <Avatar id={person.id} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
-                    <span className="person-sub">{person.age > 0 ? `${person.age} ans ` : ''}<Badge person={person} /></span>
+                    <span className="person-sub"><Badge person={person} /></span>
                   </span>
                 </button>
               ))}
@@ -98,7 +98,7 @@ function ParentHome() {
                   <Avatar id={person.id} />
                   <span className="person-body">
                     <strong>{fullName(person)}</strong>
-                    <span className="person-sub">{person.age > 0 ? `${person.age} ans ` : ''}<Badge person={person} /></span>
+                    <span className="person-sub"><Badge person={person} /></span>
                   </span>
                 </Link>
               ))}
@@ -275,11 +275,7 @@ function describeDue(
     const expense = state.expenses.find((item) => item.id === due.ref.id);
     if (expense) return `Payé par ${name(expense.payerId)} · ${expense.beneficiaryIds.map((id) => name(id)).join(', ')}`;
   }
-  if (due.ref.kind === 'policy') {
-    const person = byId(due.who);
-    const role = person?.gender === 'f' ? 'Souscriptrice' : 'Souscripteur';
-    return `${role} : ${name(due.who)}`;
-  }
+  if (due.ref.kind === 'policy') return `Souscripteur : ${name(due.who)}`;
   if (due.ref.kind === 'tontine') {
     const person = byId(due.who);
     return `${person ? fullName(person) : due.who} · participant`;
