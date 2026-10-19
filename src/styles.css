@@ -58,6 +58,11 @@ a { color: inherit; }
 }
 .who strong, .who-item strong { display: block; font-size: 13px; }
 .who small, .who-item small { display: block; opacity: .75; font-size: 11px; }
+.logout {
+  width: 100%; margin: 0 0 10px; padding: 11px 14px; border: 0; border-radius: 14px;
+  background: rgba(255,255,255,.08); color: white; font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+}
+.logout:hover { background: rgba(255,255,255,.16); }
 .who-pop {
   position: absolute; left: 0; right: 0; bottom: calc(100% + 8px);
   background: white; color: var(--text); border-radius: 16px; padding: 6px;

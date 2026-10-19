@@ -17,7 +17,7 @@ const NAV: { to: string; label: string; icon: IconName; match: (path: string) =>
 
 export function Shell() {
   const { pathname } = useLocation();
-  const { state, viewer, setAddOpen, toast } = useFamily();
+  const { state, viewer, setAddOpen, toast, logout } = useFamily();
   const heading = titleFor(pathname, state.people);
 
   useEffect(() => {
@@ -50,6 +50,7 @@ export function Shell() {
             </span>
           </div>
         </div>
+        <button className="logout" type="button" onClick={() => void logout()}>Se déconnecter</button>
         <div className="side-art" aria-hidden="true">
           <svg viewBox="0 0 220 110" width="180" height="90">
             <path d="M20 92c20-18 30-18 48-4 10 8 22 8 34-2 14-12 28-10 46 2 12 8 22 8 40-4" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="2" />
