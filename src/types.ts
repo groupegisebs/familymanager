@@ -19,6 +19,9 @@ export type Person = {
   avatar: string;
 };
 
+export type IncomeKind = 'brut' | 'net';
+export type IncomeFrequency = 'annuel' | 'mensuel' | 'bihebdomadaire' | 'hebdomadaire';
+
 export type Income = {
   id: string;
   label: string;
@@ -26,6 +29,8 @@ export type Income = {
   memberId: string;
   date: string;
   status: PayStatus;
+  kind?: IncomeKind;
+  frequency?: IncomeFrequency;
 };
 
 export type ExpenseCategory =

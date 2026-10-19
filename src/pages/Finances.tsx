@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { canSeeExpense, canSeeGoal, canSeePolicy, canSeePolicyDetails, goalByStatus, goalConfirmed, monthFlow } from '../access';
 import { BUDGET_CATEGORIES } from '../data';
-import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, pct, todayISO } from '../format';
-import type { PayStatus } from '../types';
+import { CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, INCOME_FREQUENCY_LABEL, INCOME_KIND_LABEL, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, pct, todayISO } from '../format';
+import type { IncomeFrequency, IncomeKind, PayStatus } from '../types';
 import { StatusPill, useFamily } from '../components/ui';
 
 export function Finances() {
@@ -42,15 +42,20 @@ function BudgetPane() {
       <section className="card">
         <header className="card-head"><h2>Revenus</h2></header>
         {state.incomes.length === 0 && <p className="empty">Aucun revenu enregistré.</p>}
-        {state.incomes.map((income) => (
-          <article key={income.id} className="item">
-            <div className="between">
-              <strong>{income.label}</strong>
-              <span>{money(income.amount)} <StatusPill status={income.status} /></span>
-            </div>
-            <p>Perçu par {name(income.memberId)} · {formatDayMonth(income.date)}</p>
-          </article>
-        ))}
+        {state.incomes.map((income) => {
+          const kind = income.kind ?? 'net';
+          const frequency = income.frequency ?? 'mensuel';
+          return (
+            <article key={income.id} className="item">
+              <div className="between">
+                <strong>{income.label}</strong>
+                <span>{money(income.amount)} <StatusPill status={income.status} /></span>
+              </div>
+              <p>{INCOME_KIND_LABEL[kind]} · {INCOME_FREQUENCY_LABEL[frequency]}</p>
+              <p>Perçu par {name(income.memberId)} · {formatDayMonth(income.date)}</p>
+            </article>
+          );
+        })}
         <IncomeForm />
       </section>
       <section className="card">
@@ -195,10 +200,21 @@ function IncomeForm() {
   const { addIncome, state, notify } = useFamily();
   const [label, setLabel] = useState('Salaire');
   const [amount, setAmount] = useState('');
+  const [kind, setKind] = useState<IncomeKind>('net');
+  const [frequency, setFrequency] = useState<IncomeFrequency>('mensuel');
   const [memberId, setMemberId] = useState(state.viewerId);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    await addIncome({ id: uid('inc'), label, amount: Number(amount), memberId, date: todayISO(), status: 'confirme' });
+    await addIncome({
+      id: uid('inc'),
+      label,
+      amount: Number(amount),
+      memberId,
+      date: todayISO(),
+      status: 'confirme',
+      kind,
+      frequency,
+    });
     setAmount('');
     notify('Le revenu est enregistré.');
   }
@@ -206,6 +222,20 @@ function IncomeForm() {
     <form className="form-grid" onSubmit={submit}>
       <label className="field">Libellé<input value={label} onChange={(e) => setLabel(e.target.value)} required /></label>
       <label className="field">Montant<input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} required /></label>
+      <label className="field">Type
+        <select value={kind} onChange={(e) => setKind(e.target.value as IncomeKind)}>
+          <option value="brut">Brut</option>
+          <option value="net">Net</option>
+        </select>
+      </label>
+      <label className="field">Fréquence
+        <select value={frequency} onChange={(e) => setFrequency(e.target.value as IncomeFrequency)}>
+          <option value="annuel">Annuel</option>
+          <option value="mensuel">Mensuel</option>
+          <option value="bihebdomadaire">Bi-hebdomadaire</option>
+          <option value="hebdomadaire">Hebdomadaire</option>
+        </select>
+      </label>
       <label className="field">Personne
         <select value={memberId} onChange={(e) => setMemberId(e.target.value)}>
           {state.people.filter((p) => p.role === 'parent').map((p) => <option key={p.id} value={p.id}>{fullName(p)}</option>)}

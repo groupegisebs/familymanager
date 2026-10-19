@@ -259,7 +259,15 @@ app.MapPost("/api/expenses", (HttpContext ctx, Expense item) => Save(ctx, "expen
 app.MapPost("/api/goals", (HttpContext ctx, Goal item) => Save(ctx, "goal", item.Id, item));
 app.MapPost("/api/tasks", (HttpContext ctx, FamTask item) => Save(ctx, "task", item.Id, item));
 app.MapPost("/api/documents", (HttpContext ctx, DocItem item) => Save(ctx, "document", item.Id, item));
-app.MapPost("/api/incomes", (HttpContext ctx, Income item) => Save(ctx, "income", item.Id, item));
+app.MapPost("/api/incomes", (HttpContext ctx, Income item) =>
+{
+    if (item.Amount <= 0) throw new InvalidOperation("Indiquez un montant.");
+    if (string.IsNullOrWhiteSpace(item.Label)) throw new InvalidOperation("Indiquez le libellé.");
+    if (item.Kind is not ("brut" or "net")) throw new InvalidOperation("Choisissez brut ou net.");
+    if (item.Frequency is not ("annuel" or "mensuel" or "bihebdomadaire" or "hebdomadaire"))
+        throw new InvalidOperation("Choisissez la fréquence.");
+    return Save(ctx, "income", item.Id, item);
+});
 app.MapPost("/api/tontines", (HttpContext ctx, Tontine item) => Save(ctx, "tontine", item.Id, item));
 app.MapPost("/api/policies", (HttpContext ctx, Policy item) => Save(ctx, "policy", item.Id, item));
 

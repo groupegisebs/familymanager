@@ -1,4 +1,23 @@
-import type { ExpenseCategory, PayStatus, Person, SavingsKind } from './types';
+import type { ExpenseCategory, IncomeFrequency, IncomeKind, PayStatus, Person, SavingsKind } from './types';
+
+export const INCOME_KIND_LABEL: Record<IncomeKind, string> = {
+  brut: 'Brut',
+  net: 'Net',
+};
+
+export const INCOME_FREQUENCY_LABEL: Record<IncomeFrequency, string> = {
+  annuel: 'Annuel',
+  mensuel: 'Mensuel',
+  bihebdomadaire: 'Bi-hebdomadaire',
+  hebdomadaire: 'Hebdomadaire',
+};
+
+export function monthlyIncome(amount: number, frequency: IncomeFrequency = 'mensuel') {
+  if (frequency === 'annuel') return amount / 12;
+  if (frequency === 'bihebdomadaire') return (amount * 26) / 12;
+  if (frequency === 'hebdomadaire') return (amount * 52) / 12;
+  return amount;
+}
 
 export function fullName(p: Pick<Person, 'firstName' | 'lastName'>) {
   return `${p.firstName} ${p.lastName}`.trim();

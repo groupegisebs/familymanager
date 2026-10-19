@@ -1,4 +1,4 @@
-import { monthKey, sum, todayISO } from './format';
+import { monthKey, monthlyIncome, sum, todayISO } from './format';
 import type { AppState, CalEvent, DocItem, DueRef, Expense, Goal, PayStatus, Person, Policy, Task } from './types';
 
 export function personById(state: AppState, id?: string) {
@@ -169,7 +169,11 @@ export type MonthFlow = {
 };
 
 export function monthFlow(state: AppState, month: string): MonthFlow {
-  const income = sum(state.incomes.filter((i) => i.status === 'confirme' && monthKey(i.date) === month).map((i) => i.amount));
+  const income = sum(
+    state.incomes
+      .filter((i) => i.status === 'confirme' && monthKey(i.date) === month)
+      .map((i) => monthlyIncome(i.amount, i.frequency ?? 'mensuel')),
+  );
   const expenseConfirmed = sum(state.expenses.filter((e) => e.status === 'confirme' && monthKey(e.date) === month).map((e) => e.amount));
   const expenseOpen = sum(state.expenses.filter((e) => e.status !== 'confirme' && monthKey(e.date) === month).map((e) => e.amount));
   const savings = sum(state.goals.flatMap((g) => g.moves).filter((m) => monthKey(m.date) === month).map((m) => m.amount));

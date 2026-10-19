@@ -26,6 +26,8 @@ public sealed class Income
     public string MemberId { get; set; } = "";
     public string Date { get; set; } = "";
     public string Status { get; set; } = "prevu";
+    public string Kind { get; set; } = "net";
+    public string Frequency { get; set; } = "mensuel";
 }
 
 public sealed class Expense

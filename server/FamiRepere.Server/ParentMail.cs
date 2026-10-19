@@ -110,7 +110,7 @@ public static class ParentNotices
         Goal g => ("Objectif d'épargne", g.Title),
         FamTask t => ("Tâche", $"{t.Title}\n{t.Due}".Trim()),
         DocItem d => ("Document", d.Title),
-        Income i => ("Revenu", $"{i.Label}\n{i.Amount:0.##} $ · {Label(i.Status)}"),
+        Income i => ("Revenu", $"{i.Label}\n{i.Amount:0.##} $ · {IncomeKind(i.Kind)} · {IncomeFreq(i.Frequency)} · {Label(i.Status)}"),
         Tontine t => ("Tontine", t.Name),
         Policy p => ("Assurance", $"{p.Type}\nPrime le {p.PremiumDueDate}".Trim()),
         ActivityBundle b => ("Activité", b.Activity.Name),
@@ -123,5 +123,15 @@ public static class ParentNotices
         "declare" => "déclaré",
         "confirme" => "confirmé",
         _ => status,
+    };
+
+    static string IncomeKind(string kind) => kind == "brut" ? "brut" : "net";
+
+    static string IncomeFreq(string frequency) => frequency switch
+    {
+        "annuel" => "annuel",
+        "bihebdomadaire" => "bi-hebdomadaire",
+        "hebdomadaire" => "hebdomadaire",
+        _ => "mensuel",
     };
 }
