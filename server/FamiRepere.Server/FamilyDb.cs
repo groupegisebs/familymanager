@@ -167,6 +167,37 @@ public sealed class FamilyDb
             ("$v", JsonSerializer.Serialize(limits, Json)));
     }
 
+    public List<string> OtherParentEmails(string exceptId)
+    {
+        using var db = Open();
+        return db.Query("SELECT username FROM people WHERE role = 'parent' AND id != $id", ("$id", exceptId))
+            .Select(r => S(r, "username"))
+            .Where(u => u.Contains('@'))
+            .ToList();
+    }
+
+    public List<string> ParentEmails()
+    {
+        using var db = Open();
+        return db.Query("SELECT username FROM people WHERE role = 'parent'")
+            .Select(r => S(r, "username"))
+            .Where(u => u.Contains('@'))
+            .ToList();
+    }
+
+    public string? Setting(string key)
+    {
+        using var db = Open();
+        var row = db.QueryOne("SELECT value FROM settings WHERE key = $k", ("$k", key));
+        return row is null ? null : S(row, "value");
+    }
+
+    public void Setting(string key, string value)
+    {
+        using var db = Open();
+        db.Execute("INSERT INTO settings (key, value) VALUES ($k, $v) ON CONFLICT(key) DO UPDATE SET value = $v", ("$k", key), ("$v", value));
+    }
+
     public void SetMask(string userId, bool mask)
     {
         using var db = Open();

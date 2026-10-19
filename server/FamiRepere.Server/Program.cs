@@ -35,11 +35,15 @@ static void TryWriteStartupLog(Exception ex)
 
 static void Start(WebApplicationBuilder builder, FamilyDb db)
 {
+builder.Services.AddSingleton(db);
+builder.Services.AddSingleton<ParentMail>();
+builder.Services.AddHostedService<ParentDigest>();
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 var app = builder.Build();
+var mail = app.Services.GetRequiredService<ParentMail>();
 
 app.Use(async (ctx, next) =>
 {
@@ -94,6 +98,7 @@ app.MapPost("/api/members", (HttpContext ctx, MemberBody body) =>
     ValidateAccount(body.FirstName, body.LastName, body.Age, body.Username, body.Password);
     if (string.IsNullOrWhiteSpace(body.Relation)) throw new InvalidOperation("Indiquez le lien familial.");
     db.CreateMember(actor, body.FirstName, body.LastName, body.Age, body.Gender, body.Role, body.Relation, body.Username, body.Password);
+    if (body.Role == "parent") Tell(actor, "Nouveau parent", $"{body.FirstName.Trim()} {body.LastName.Trim()} peut maintenant se connecter.");
     return Results.Ok(db.View(actor));
 });
 
@@ -115,6 +120,7 @@ app.MapPost("/api/payments/advance", (HttpContext ctx, DueRef due) =>
 {
     var person = Parent(ctx);
     db.Advance(person, due);
+    Tell(person, "Paiement", "Un paiement familial a changé d'étape.");
     return Results.Ok(db.View(person));
 });
 
@@ -123,6 +129,8 @@ app.MapPost("/api/activities", (HttpContext ctx, ActivityBundle bundle) =>
     var person = Parent(ctx);
     RequireId(bundle.Activity.Id);
     db.AddActivity(bundle);
+    var activity = ParentNotices.Describe(bundle);
+    Tell(person, activity.Subject, activity.Body);
     return Results.Ok(db.View(person));
 });
 
@@ -154,7 +162,20 @@ IResult Save<T>(HttpContext ctx, string kind, string id, T item)
     var person = Parent(ctx);
     RequireId(id);
     db.Add(kind, id, item);
+    if (item is not null)
+    {
+        var notice = ParentNotices.Describe(item);
+        Tell(person, notice.Subject, notice.Body);
+    }
     return Results.Ok(db.View(person));
+}
+
+void Tell(Person actor, string subject, string text)
+{
+    var recipients = db.OtherParentEmails(actor.Id);
+    if (recipients.Count == 0) return;
+    var who = ParentNotices.Who(actor);
+    _ = mail.SendAsync(recipients, $"FamiRepère · {subject}", $"{who} a enregistré ceci.\n\n{text}");
 }
 
 string ReadCookie(HttpContext ctx) => ctx.Request.Cookies["famirepere"] ?? "";

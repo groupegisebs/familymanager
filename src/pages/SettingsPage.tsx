@@ -22,6 +22,13 @@ export function SettingsPage() {
             ? 'Vous créez les autres membres depuis la page Famille. Chacun se connecte avec son propre identifiant.'
             : 'Le père du foyer crée les comptes. Un enfant ne voit pas les revenus des parents.'}
         </p>
+        {viewer.role === 'parent' && (
+          <p className="hint">
+            {viewer.username.includes('@')
+              ? 'Les autres parents reçoivent un courriel à votre identifiant quand vous enregistrez un rendez-vous, une dépense ou un document. Un rappel des sept prochains jours part chaque jour.'
+              : 'Pour recevoir les courriels des autres parents, l’identifiant doit être une adresse de courriel.'}
+          </p>
+        )}
         <button type="button" className="btn btn-ghost" onClick={() => void logout()}>Se déconnecter</button>
       </section>
       <section className="card">

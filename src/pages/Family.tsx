@@ -81,7 +81,8 @@ function CreateMember() {
           </select>
         </label>
         <label className="field">Lien<input value={form.relation} onChange={(e) => setForm({ ...form, relation: e.target.value })} required /></label>
-        <label className="field">Identifiant<input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required /></label>
+        <label className="field">Identifiant<input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder={form.role === 'parent' ? 'adresse@courriel' : ''} required /></label>
+        {form.role === 'parent' && <p className="hint">Pour un parent, l’identifiant est son courriel : c’est là qu’arrivent les notifications de l’autre parent.</p>}
         <label className="field">Mot de passe<input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={8} required /></label>
         {error && <p className="form-error">{error}</p>}
         <button className="btn btn-primary" type="submit">Créer le compte</button>
