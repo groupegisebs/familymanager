@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using FamiRepere.Server;
 
 try
@@ -40,6 +41,12 @@ builder.WebHost.ConfigureKestrel(options =>
     options.AddServerHeader = false;
     options.Limits.MaxRequestBodySize = 1_048_576;
 });
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.AddSingleton(db);
 builder.Services.AddHttpClient<ParentMail>();
 builder.Services.AddHostedService<ParentDigest>();
@@ -49,6 +56,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.MaxDepth = 16;
 });
 var app = builder.Build();
+app.UseForwardedHeaders();
 var mail = app.Services.GetRequiredService<ParentMail>();
 
 app.Use(async (ctx, next) =>
@@ -64,6 +72,12 @@ app.Use(async (ctx, next) =>
         ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000";
     if (!HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method) && !SameOrigin(ctx))
     {
+        Console.Error.WriteLine($"Origine refusée host={ctx.Request.Host} origin={ctx.Request.Headers.Origin} forwarded={ctx.Request.Headers["X-Forwarded-Host"]} site={ctx.Request.Headers["Sec-Fetch-Site"]}");
+        if (ctx.Request.HasFormContentType)
+        {
+            ctx.Response.Redirect("/?connexion=bloque");
+            return;
+        }
         ctx.Response.StatusCode = 403;
         await ctx.Response.WriteAsJsonAsync(new { error = "Requête refusée." });
         return;
@@ -330,14 +344,21 @@ static async Task<(string Username, string Password, bool Form)> ReadLogin(HttpC
 
 static bool SameOrigin(HttpContext ctx)
 {
+    var site = ctx.Request.Headers["Sec-Fetch-Site"].ToString();
+    if (site is "same-origin" or "none") return true;
     var origin = ctx.Request.Headers.Origin.ToString();
-    if (string.IsNullOrEmpty(origin))
-    {
-        var site = ctx.Request.Headers["Sec-Fetch-Site"].ToString();
-        return site is "" or "same-origin" or "none";
-    }
-    return Uri.TryCreate(origin, UriKind.Absolute, out var uri)
-        && string.Equals(uri.Host, ctx.Request.Host.Host, StringComparison.OrdinalIgnoreCase);
+    if (string.IsNullOrEmpty(origin)) return site is "";
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+    if (string.Equals(uri.Host, ctx.Request.Host.Host, StringComparison.OrdinalIgnoreCase)) return true;
+    var forwarded = HeaderHost(ctx.Request.Headers["X-Forwarded-Host"].ToString());
+    return forwarded is not null && string.Equals(uri.Host, forwarded, StringComparison.OrdinalIgnoreCase);
+}
+
+static string? HeaderHost(string value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return null;
+    var name = value.Split(',')[0].Trim().Split(':')[0];
+    return string.IsNullOrEmpty(name) ? null : name;
 }
 
 void ValidateAccount(string first, string last, int age, string username, string password)

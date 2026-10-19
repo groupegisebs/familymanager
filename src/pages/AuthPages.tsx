@@ -43,7 +43,9 @@ export function LoginPage() {
     ? 'Trop de tentatives. Réessayez dans quelques minutes.'
     : code === 'refus'
       ? 'Identifiant ou mot de passe incorrect.'
-      : '';
+      : code === 'bloque'
+        ? 'La connexion a été refusée. Rechargez la page, puis réessayez.'
+        : '';
 
   return (
     <main className="auth">
