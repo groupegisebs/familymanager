@@ -1,13 +1,13 @@
-import type { AppState, ExpenseCategory } from './types';
+import type { AppState, CategoryLimits } from './types';
 
-export const BUDGET_CATEGORIES: ExpenseCategory[] = [
+export const BUDGET_CATEGORIES = [
   'logement',
   'alimentation',
   'enfants',
   'transport',
   'sante',
   'loisirs',
-];
+] as const satisfies readonly (keyof CategoryLimits)[];
 
 export function createEmpty(): AppState {
   return {
