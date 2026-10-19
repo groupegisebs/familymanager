@@ -294,7 +294,7 @@ a { color: inherit; }
   padding: 24px;
   background:
     linear-gradient(180deg, rgba(244, 242, 251, 0.28), rgba(60, 45, 114, 0.28)),
-    url('./assets/famirepere-fond.jpg') center / cover no-repeat;
+    url('/famirepere-fond-famille.jpg') center / cover no-repeat;
 }
 .auth-card { width: min(460px, 100%); display: grid; gap: 12px; padding: 28px; background: rgba(255, 255, 255, 0.94); }
 .auth-card h1 { margin: 0; font-size: 28px; }
