@@ -16,4 +16,4 @@ Le workflow `.github/workflows/deploy-production.yml` publie l’interface et l�
 | `FAMIREPERE_SSH_USER` | `ubuntu` |
 | `FAMIREPERE_SSH_PORT` | `22` |
 
-Le service systemd s’appelle `famirepere` et écoute `127.0.0.1:55090`. Placez un reverse proxy HTTPS devant ce port. Le premier visiteur crée le compte du père ; aucun mot de passe n’est semé.
+Le service systemd s’appelle `famirepere` et écoute le port `55091`. Placez un reverse proxy HTTPS devant ce port. Le premier visiteur crée le compte du père ; aucun mot de passe n’est semé.

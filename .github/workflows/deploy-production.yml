@@ -19,7 +19,7 @@ env:
   DEFAULT_SSH_PORT: "22"
   DEFAULT_APP_ROOT: "/opt/apps/famirepere"
   DEFAULT_SERVICE_NAME: "famirepere"
-  DEFAULT_LISTEN_PORT: "55090"
+  DEFAULT_LISTEN_PORT: "55091"
 
 jobs:
   build-and-deploy:
