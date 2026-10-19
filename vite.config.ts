@@ -10,6 +10,9 @@ export default defineConfig({
       '/api': 'http://localhost:5088',
       '/health': 'http://localhost:5088',
     },
+    watch: {
+      ignored: ['**/server/**/bin/**', '**/server/**/obj/**'],
+    },
   },
   build: {
     outDir: 'server/FamiRepere.Server/wwwroot',
