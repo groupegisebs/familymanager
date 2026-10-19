@@ -23,7 +23,7 @@ export function SetupPage() {
   return (
     <main className="auth">
       <form className="card auth-card" onSubmit={submit}>
-        <p className="brand-text"><strong>FamiRepère</strong></p>
+        <p className="auth-brand"><img src="/famirepere-logo.jpg" alt="" width={42} height={42} /><strong>FamiRepère</strong></p>
         <h1>Créer le père du foyer</h1>
         <p className="hint">Le premier compte est le super administrateur. C’est lui qui crée ensuite chaque membre de la famille.</p>
         <label className="field">Prénom<input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></label>
@@ -59,7 +59,7 @@ export function LoginPage() {
   return (
     <main className="auth">
       <form className="card auth-card" onSubmit={submit}>
-        <p className="brand-text"><strong>FamiRepère</strong></p>
+        <p className="auth-brand"><img src="/famirepere-logo.jpg" alt="" width={42} height={42} /><strong>FamiRepère</strong></p>
         <h1>Connexion</h1>
         <label className="field">Identifiant<input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required /></label>
         <label className="field">Mot de passe<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></label>

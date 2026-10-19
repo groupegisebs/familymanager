@@ -30,7 +30,7 @@ export function Shell() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">
-            <Icon name="home" size={22} />
+            <img src="/famirepere-logo.jpg" alt="" width={42} height={42} />
           </span>
           <span className="brand-text">
             <strong>FamiRepère</strong>
