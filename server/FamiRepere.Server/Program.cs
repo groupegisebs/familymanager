@@ -289,7 +289,8 @@ app.MapPost("/api/investments", (HttpContext ctx, Investment item) =>
 app.MapPost("/api/assets", (HttpContext ctx, Asset item) =>
 {
     if (string.IsNullOrWhiteSpace(item.Label)) throw new InvalidOperation("Indiquez le bien patrimonial.");
-    if (item.Type is not ("immobilier" or "terrain" or "vehicule" or "entreprise" or "objet" or "autre"))
+    if (item.Type == "immobilier") item.Type = "maison";
+    if (item.Type is not ("maison" or "terrain" or "champs" or "entreprise" or "vehicule" or "objet" or "autre"))
         throw new InvalidOperation("Type de bien inconnu.");
     if (string.IsNullOrWhiteSpace(item.OwnerId)) throw new InvalidOperation("Indiquez le parent propriétaire.");
     if (item.EstimatedValue < 0 || item.PurchaseValue < 0) throw new InvalidOperation("Les montants ne peuvent pas être négatifs.");
@@ -431,10 +432,11 @@ static void RequireDetails(string type, Dictionary<string, string> details, bool
         _ => new[] { "nature" },
     } : type switch
     {
-        "immobilier" => ["address", "cadastral", "areaSqm", "rooms", "mortgageBalance"],
+        "maison" or "immobilier" => ["address", "cadastral", "areaSqm", "rooms", "mortgageBalance"],
         "terrain" => ["address", "cadastral", "areaSqm", "zoning"],
-        "vehicule" => ["make", "model", "year", "vin", "plate", "mileage"],
+        "champs" => ["address", "cadastral", "areaHa", "culture"],
         "entreprise" => ["legalName", "registrationNumber", "activity", "ownershipPercent"],
+        "vehicule" => ["make", "model", "year", "vin", "plate", "mileage"],
         "objet" => ["brand", "serial", "appraisalDate"],
         _ => new[] { "nature" },
     };

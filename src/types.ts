@@ -171,7 +171,7 @@ export type Investment = {
   details: Record<string, string>;
 };
 
-export type AssetType = 'immobilier' | 'terrain' | 'vehicule' | 'entreprise' | 'objet' | 'autre';
+export type AssetType = 'maison' | 'terrain' | 'champs' | 'entreprise' | 'vehicule' | 'objet' | 'autre';
 
 export type Asset = {
   id: string;

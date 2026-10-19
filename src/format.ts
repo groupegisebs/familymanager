@@ -92,10 +92,11 @@ export const INVESTMENT_TYPE_LABEL: Record<InvestmentType, string> = {
 };
 
 export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
-  immobilier: 'Immobilier',
+  maison: 'Maison',
   terrain: 'Terrain',
-  vehicule: 'Véhicule',
+  champs: 'Champs',
   entreprise: 'Entreprise',
+  vehicule: 'Véhicule',
   objet: 'Objet de valeur',
   autre: 'Autre',
 };
@@ -150,7 +151,7 @@ export const INVESTMENT_DETAIL_FIELDS: Record<InvestmentType, DetailField[]> = {
 };
 
 export const ASSET_DETAIL_FIELDS: Record<AssetType, DetailField[]> = {
-  immobilier: [
+  maison: [
     { key: 'address', label: 'Adresse complète', required: true },
     { key: 'cadastral', label: 'N° cadastral / lot', required: true },
     { key: 'areaSqm', label: 'Superficie (m²)', kind: 'number', required: true },
@@ -164,6 +165,19 @@ export const ASSET_DETAIL_FIELDS: Record<AssetType, DetailField[]> = {
     { key: 'areaSqm', label: 'Superficie (m²)', kind: 'number', required: true },
     { key: 'zoning', label: 'Zonage', required: true },
   ],
+  champs: [
+    { key: 'address', label: 'Emplacement', required: true },
+    { key: 'cadastral', label: 'N° cadastral / lot', required: true },
+    { key: 'areaHa', label: 'Superficie (ha)', kind: 'number', required: true },
+    { key: 'culture', label: 'Culture / usage', required: true, placeholder: 'cacao, maïs, jachère…' },
+    { key: 'titleDeed', label: 'Titre foncier / attestation' },
+  ],
+  entreprise: [
+    { key: 'legalName', label: 'Raison sociale', required: true },
+    { key: 'registrationNumber', label: 'N° d’entreprise', required: true },
+    { key: 'activity', label: 'Activité', required: true },
+    { key: 'ownershipPercent', label: 'Part détenue dans l’entreprise (%)', kind: 'number', required: true },
+  ],
   vehicule: [
     { key: 'make', label: 'Marque', required: true },
     { key: 'model', label: 'Modèle', required: true },
@@ -171,12 +185,6 @@ export const ASSET_DETAIL_FIELDS: Record<AssetType, DetailField[]> = {
     { key: 'vin', label: 'NIV / VIN', required: true },
     { key: 'plate', label: 'Immatriculation', required: true },
     { key: 'mileage', label: 'Kilométrage', kind: 'number', required: true },
-  ],
-  entreprise: [
-    { key: 'legalName', label: 'Raison sociale', required: true },
-    { key: 'registrationNumber', label: 'N° d’entreprise', required: true },
-    { key: 'activity', label: 'Activité', required: true },
-    { key: 'ownershipPercent', label: 'Part détenue dans l’entreprise (%)', kind: 'number', required: true },
   ],
   objet: [
     { key: 'brand', label: 'Marque / artisan', required: true },

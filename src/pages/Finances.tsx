@@ -360,7 +360,30 @@ function WealthPane() {
       </section>
 
       <section className="card">
+        <header className="card-head"><h2>Patrimoine des parents</h2></header>
+        <p className="hint">Maison, terrain, champs, entreprise et autres biens physiques.</p>
+        {state.assets.length === 0 && <p className="empty">Aucun bien patrimonial enregistré.</p>}
+        {state.assets.map((item) => (
+          <article key={item.id} className="item">
+            <div className="between">
+              <strong>{item.label}</strong>
+              <span>{money(item.estimatedValue)}</span>
+            </div>
+            <p>{ASSET_TYPE_LABEL[item.type] ?? item.type}{item.description ? ` · ${item.description}` : ''}</p>
+            <p>Propriétaire : {name(item.ownerId)}{item.coOwnerId ? ` · Copropriétaire : ${name(item.coOwnerId)}` : ''}</p>
+            <p>Part détenue : {item.sharePercent || 100} % · acquis le {formatDayMonth(item.acquiredDate)}</p>
+            <p>Valeur d’achat {money(item.purchaseValue)} · valeur estimée {money(item.estimatedValue)}</p>
+            {item.location && <p>Lieu : {item.location}</p>}
+            <DetailList details={item.details} />
+            {item.notes && <p>{item.notes}</p>}
+          </article>
+        ))}
+        <AssetForm parents={parents} />
+      </section>
+
+      <section className="card">
         <header className="card-head"><h2>Investissements des parents</h2></header>
+        <p className="hint">Placements financiers uniquement (REER, CELI, actions…). Pour une maison, un terrain, des champs ou une entreprise, utilisez le patrimoine ci-dessus.</p>
         {state.investments.length === 0 && <p className="empty">Aucun investissement enregistré.</p>}
         {state.investments.map((item) => (
           <article key={item.id} className="item">
@@ -378,27 +401,6 @@ function WealthPane() {
           </article>
         ))}
         <InvestmentForm parents={parents} />
-      </section>
-
-      <section className="card">
-        <header className="card-head"><h2>Patrimoine des parents</h2></header>
-        {state.assets.length === 0 && <p className="empty">Aucun bien patrimonial enregistré.</p>}
-        {state.assets.map((item) => (
-          <article key={item.id} className="item">
-            <div className="between">
-              <strong>{item.label}</strong>
-              <span>{money(item.estimatedValue)}</span>
-            </div>
-            <p>{ASSET_TYPE_LABEL[item.type]}{item.description ? ` · ${item.description}` : ''}</p>
-            <p>Propriétaire : {name(item.ownerId)}{item.coOwnerId ? ` · Copropriétaire : ${name(item.coOwnerId)}` : ''}</p>
-            <p>Part détenue : {item.sharePercent || 100} % · acquis le {formatDayMonth(item.acquiredDate)}</p>
-            <p>Valeur d’achat {money(item.purchaseValue)} · valeur estimée {money(item.estimatedValue)}</p>
-            {item.location && <p>Lieu : {item.location}</p>}
-            <DetailList details={item.details} />
-            {item.notes && <p>{item.notes}</p>}
-          </article>
-        ))}
-        <AssetForm parents={parents} />
       </section>
     </div>
   );
@@ -511,7 +513,7 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
   const { addAsset, viewer, notify } = useFamily();
   const [form, setForm] = useState({
     label: '',
-    type: 'immobilier' as AssetType,
+    type: 'maison' as AssetType,
     description: '',
     ownerId: viewer.id,
     coOwnerId: '',
@@ -537,7 +539,7 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
       estimatedValue: Number(form.estimatedValue),
       purchaseValue: Number(form.purchaseValue),
       acquiredDate: form.acquiredDate,
-      location: form.type === 'immobilier' || form.type === 'terrain' ? (details.address || form.location) : form.location,
+      location: form.type === 'maison' || form.type === 'terrain' || form.type === 'champs' ? (details.address || form.location) : form.location,
       sharePercent: Number(form.sharePercent),
       notes: form.notes,
       details,
@@ -554,7 +556,7 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
           {Object.entries(ASSET_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label>
-      <label className="field field-wide">Description<input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Maison, terrain, véhicule…" required /></label>
+      <label className="field field-wide">Description<input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Maison familiale, champ de cacao…" required /></label>
       <label className="field">Parent propriétaire
         <select value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })}>
           {parents.map((person) => <option key={person.id} value={person.id}>{fullName(person)}</option>)}
