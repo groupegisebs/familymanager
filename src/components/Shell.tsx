@@ -1,24 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { fullName } from '../format';
+import { formatMonthYear, fullName, todayISO } from '../format';
 import { useFamily } from './ui';
 import { Avatar } from './Avatar';
-import { Icon, type IconName } from './Icons';
+import { Icon } from './Icons';
 import { AddDialog } from './AddDialog';
+import { upcomingDues } from '../access';
 
-const NAV: { to: string; label: string; icon: IconName; match: (path: string) => boolean }[] = [
-  { to: '/', label: 'Accueil', icon: 'home', match: (p) => p === '/' },
-  { to: '/famille', label: 'Ma famille', icon: 'users', match: (p) => p.startsWith('/famille') },
-  { to: '/calendrier', label: 'Calendrier', icon: 'calendar', match: (p) => p.startsWith('/calendrier') },
-  { to: '/finances/budget', label: 'Finances', icon: 'wallet', match: (p) => p.startsWith('/finances') },
-  { to: '/documents', label: 'Documents', icon: 'file', match: (p) => p.startsWith('/documents') },
-  { to: '/parametres', label: 'Paramètres', icon: 'settings', match: (p) => p.startsWith('/parametres') },
+const FINANCE_LINKS = [
+  { to: '/finances/budget', label: 'Budget' },
+  { to: '/finances/epargne', label: 'Épargne' },
+  { to: '/finances/tontines', label: 'Tontines' },
+  { to: '/finances/assurances', label: 'Assurances' },
 ];
 
 export function Shell() {
   const { pathname } = useLocation();
   const { state, viewer, setAddOpen, toast, logout } = useFamily();
   const heading = titleFor(pathname, state.people);
+  const financeOpen = pathname.startsWith('/finances');
+  const [financesOpen, setFinancesOpen] = useState(financeOpen);
+  const today = todayISO();
+  const alerts = upcomingDues(state, today).filter((due) => due.date <= addDaysSafe(today, 7)).length
+    + state.tasks.filter((task) => !task.done && task.due <= addDaysSafe(today, 7)).length;
+  const now = new Date();
+  const monthLabel = formatMonthYear(now.getFullYear(), now.getMonth());
+
+  useEffect(() => {
+    if (financeOpen) setFinancesOpen(true);
+  }, [financeOpen]);
 
   useEffect(() => {
     document.title = `${heading.title} — FamiRepère`;
@@ -33,12 +43,36 @@ export function Shell() {
           <small>Une famille mieux organisée au quotidien</small>
         </div>
         <nav className="nav" aria-label="Navigation">
-          {NAV.map((item) => (
-            <NavLink key={item.label} to={item.to} end={item.to === '/'} className={item.match(pathname) ? 'nav-item active' : 'nav-item'}>
-              <Icon name={item.icon} />
-              {item.label}
-            </NavLink>
-          ))}
+          <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+            <Icon name="home" /> Accueil
+          </NavLink>
+          <NavLink to="/famille" className={({ isActive }) => (isActive || pathname.startsWith('/famille/') ? 'nav-item active' : 'nav-item')}>
+            <Icon name="users" /> Ma famille
+          </NavLink>
+          <NavLink to="/calendrier" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+            <Icon name="calendar" /> Calendrier
+          </NavLink>
+          <div className={financeOpen ? 'nav-group open' : 'nav-group'}>
+            <button type="button" className={financeOpen ? 'nav-item active' : 'nav-item'} onClick={() => setFinancesOpen((v) => !v)} aria-expanded={financesOpen}>
+              <Icon name="wallet" /> Finances
+              <span className="nav-caret">{financesOpen ? '▾' : '▸'}</span>
+            </button>
+            {financesOpen && (
+              <div className="nav-sub">
+                {FINANCE_LINKS.map((link) => (
+                  <NavLink key={link.to} to={link.to} className={({ isActive }) => (isActive ? 'nav-subitem on' : 'nav-subitem')}>
+                    {link.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+          <NavLink to="/documents" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+            <Icon name="file" /> Documents
+          </NavLink>
+          <NavLink to="/parametres" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+            <Icon name="settings" /> Paramètres
+          </NavLink>
         </nav>
         <div className="side-spacer" />
         <div className="who-wrap">
@@ -77,6 +111,13 @@ export function Shell() {
             <p>{heading.sub}</p>
           </div>
           <div className="actions">
+            {pathname === '/' && <span className="month-chip"><Icon name="calendar" size={16} /> {monthLabel}</span>}
+            {pathname === '/' && (
+              <span className="bell" aria-label={alerts ? `${alerts} rappels` : 'Aucun rappel'}>
+                <Icon name="bell" size={18} />
+                {alerts > 0 && <i />}
+              </span>
+            )}
             {(viewer.role === 'parent' || viewer.role === 'enfant') && !pathname.startsWith('/famille') && (
               <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" size={18} />
@@ -95,6 +136,15 @@ export function Shell() {
   );
 }
 
+function addDaysSafe(iso: string, n: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${dt.getFullYear()}-${mm}-${dd}`;
+}
+
 function titleFor(pathname: string, people: { id: string; firstName: string; lastName: string; age: number; relation: string }[]) {
   if (pathname.startsWith('/famille/')) {
     const person = people.find((p) => p.id === pathname.split('/')[2]);
@@ -105,5 +155,5 @@ function titleFor(pathname: string, people: { id: string; firstName: string; las
   if (pathname.startsWith('/finances')) return { title: 'Finances', sub: 'Budget, épargne, tontines et assurances' };
   if (pathname.startsWith('/documents')) return { title: 'Documents familiaux', sub: 'Factures, scolarité, assurances et autorisations' };
   if (pathname.startsWith('/parametres')) return { title: 'Paramètres', sub: 'Comptes, accès et rappels' };
-  return { title: 'Tableau de bord familial', sub: 'Tout pour organiser votre quotidien' };
+  return { title: 'Tableau de bord', sub: 'Votre famille, vos priorités, en un coup d’œil' };
 }

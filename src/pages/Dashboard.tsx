@@ -9,10 +9,7 @@ import {
   household,
   upcomingDues,
 } from '../access';
-import { BUDGET_CATEGORIES } from '../data';
 import {
-  CATEGORY_COLOR,
-  CATEGORY_LABEL,
   addDays,
   companionWord,
   formatDayMonth,
@@ -27,8 +24,7 @@ import {
 import type { CalEvent, Goal, Person } from '../types';
 import { Icon, type IconName } from '../components/Icons';
 import { Avatar } from '../components/Avatar';
-import { Badge, StatusPill, useFamily } from '../components/ui';
-import { MemberOverview } from './MemberPage';
+import { useFamily } from '../components/ui';
 
 export function Dashboard() {
   const { viewer } = useFamily();
@@ -39,303 +35,227 @@ export function Dashboard() {
 
 function ParentHome() {
   const { state, byId, name } = useFamily();
-  const [mode, setMode] = useState<'famille' | 'membre'>('famille');
-  const [selected, setSelected] = useState(state.viewerId);
+  const [filter, setFilter] = useState<string | 'all'>('all');
   const members = household(state);
   const today = todayISO();
   const month = monthKey(today);
+  const weekEnd = addDays(today, 7);
   const spent = confirmedSpend(state, month);
-  const saved = state.goals.reduce((total, goal) => total + goalConfirmed(goal), 0);
+  const budget = state.monthlyBudget || 0;
+  const remaining = Math.max(0, budget - spent);
+  const goals = state.goals.filter((goal) => filter === 'all' || goal.holderId === filter || goal.beneficiaryIds.includes(filter));
+  const saved = goals.reduce((total, goal) => total + goalConfirmed(goal), 0);
   const weekEvents = state.events
-    .filter((event) => event.date > today && event.date <= addDays(today, 7))
+    .filter((event) => event.date >= today && event.date <= weekEnd)
+    .filter((event) => filter === 'all' || event.memberId === filter || event.companionId === filter)
     .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-  const tasks = state.tasks.filter((task) => task.due === today).sort((a, b) => a.title.localeCompare(b.title));
-  const dues = upcomingDues(state, today).slice(0, 4);
-  const tontine = state.tontines[0];
-  const nextTurn = tontine?.participants.find((p) => !p.received);
-  const nextPay = tontine?.payments.find((p) => p.memberId && p.status !== 'confirme');
-  const budgetRows = BUDGET_CATEGORIES.map((category) => ({ category, limit: state.categoryLimits[category] }));
-  const goals = state.goals;
-  const attention = attentionPolicies(state.policies, name);
+  const dues = upcomingDues(state, today)
+    .filter((due) => due.date <= weekEnd)
+    .filter((due) => filter === 'all' || due.who === filter)
+    .slice(0, 6);
+  const dueTotal = dues.reduce((total, due) => total + due.amount, 0);
+  const tasks = state.tasks
+    .filter((task) => !task.done && task.due >= today && task.due <= weekEnd)
+    .filter((task) => filter === 'all' || task.assigneeId === filter)
+    .sort((a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title));
+  const reminders = [
+    ...dues.map((due) => ({
+      id: dueKey(due.ref),
+      title: due.title,
+      detail: `${money(due.amount)} · ${formatDayMonth(due.date)}`,
+      when: relativeDays(today, due.date),
+      tone: 'money' as const,
+      to: due.ref.kind === 'policy' ? '/finances/assurances' : due.ref.kind === 'tontine' ? '/finances/tontines' : '/finances/budget',
+    })),
+    ...state.documents
+      .filter((doc) => doc.category === 'autorisation')
+      .slice(0, 2)
+      .map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        detail: doc.memberIds.map((id) => name(id)).join(', ') || 'Document',
+        when: 'À signer',
+        tone: 'doc' as const,
+        to: '/documents',
+      })),
+  ].slice(0, 5);
+  const familyEvents = state.events
+    .filter((event) => event.kind === 'famille' && event.date >= today && event.date <= addDays(today, 30))
+    .filter((event) => filter === 'all' || event.memberId === filter)
+    .slice(0, 3);
 
   return (
-    <div className="dash">
-      <div className="view-switch" role="tablist" aria-label="Vue de l’accueil">
-        <button type="button" className={mode === 'famille' ? 'on' : ''} onClick={() => setMode('famille')}>Vue famille</button>
-        <button type="button" className={mode === 'membre' ? 'on' : ''} onClick={() => setMode('membre')}>Vue d’un membre</button>
-      </div>
+    <div className="dash stack">
+      <section className="filter-row" aria-label="Filtrer par membre">
+        <button type="button" className={filter === 'all' ? 'filter-chip on' : 'filter-chip'} onClick={() => setFilter('all')}>
+          <span className="filter-all"><Icon name="users" size={16} /></span>
+          Toute la famille
+        </button>
+        {members.map((person) => (
+          <button key={person.id} type="button" className={filter === person.id ? 'filter-chip on' : 'filter-chip'} onClick={() => setFilter(person.id)}>
+            <Avatar id={person.id} look={person.avatar} size={28} />
+            {person.firstName}
+          </button>
+        ))}
+      </section>
 
-      {mode === 'membre' ? (
-        <div className="stack">
-          <section className="card">
-            <header className="card-head">
-              <h2>Choisir un membre</h2>
-            </header>
-            <div className="members">
-              {members.map((person) => (
-                <button key={person.id} type="button" className={selected === person.id ? 'person on' : 'person'} onClick={() => setSelected(person.id)}>
-                  <Avatar id={person.id} look={person.avatar} />
-                  <span className="person-body">
-                    <strong>{fullName(person)}</strong>
-                    <span className="person-sub"><Badge person={person} /></span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-          <MemberOverview personId={selected} />
-        </div>
-      ) : (
-        <div className="stack">
-          <section className="card">
-            <header className="card-head">
-              <h2><span className="title-ico"><Icon name="users" size={16} /></span> Notre famille · {members.length} membres</h2>
-              <Link to="/famille" className="quiet" aria-label="Voir la famille"><Icon name="chevron" size={18} /></Link>
-            </header>
-            <div className="members">
-              {members.map((person) => (
-                <Link key={person.id} to={`/famille/${person.id}`} className="person">
-                  <Avatar id={person.id} look={person.avatar} />
-                  <span className="person-body">
-                    <strong>{fullName(person)}</strong>
-                    <span className="person-sub"><Badge person={person} /></span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {(state.requests.length > 0 || state.notes.length > 0) && (
-            <section className="split">
-              <article className="card">
-                <header className="card-head"><h2>Demandes des enfants</h2></header>
-                {state.requests.length === 0 && <p className="empty">Aucune demande.</p>}
-                {state.requests.map((request) => (
-                  <article key={request.id} className="item">
-                    <strong>{request.title}</strong>
-                    <p>{name(request.authorId)} · {formatDayMonth(request.date)}</p>
-                    {request.detail && <p>{request.detail}</p>}
-                  </article>
-                ))}
+      {(state.requests.length > 0 || state.notes.length > 0) && (
+        <section className="split">
+          <article className="card">
+            <header className="card-head"><h2>Demandes des enfants</h2></header>
+            {state.requests.length === 0 && <p className="empty">Aucune demande.</p>}
+            {state.requests.map((request) => (
+              <article key={request.id} className="item">
+                <strong>{request.title}</strong>
+                <p>{name(request.authorId)} · {formatDayMonth(request.date)}</p>
+                {request.detail && <p>{request.detail}</p>}
               </article>
-              <article className="card">
-                <header className="card-head"><h2>Notes des enfants</h2></header>
-                {state.notes.length === 0 && <p className="empty">Aucune note.</p>}
-                {state.notes.map((note) => (
-                  <article key={note.id} className="item">
-                    <strong>{note.title}</strong>
-                    <p>{name(note.authorId)} · {formatDayMonth(note.date)}</p>
-                    {note.body && <p>{note.body}</p>}
-                  </article>
-                ))}
+            ))}
+          </article>
+          <article className="card">
+            <header className="card-head"><h2>Notes des enfants</h2></header>
+            {state.notes.length === 0 && <p className="empty">Aucune note.</p>}
+            {state.notes.map((note) => (
+              <article key={note.id} className="item">
+                <strong>{note.title}</strong>
+                <p>{name(note.authorId)} · {formatDayMonth(note.date)}</p>
+                {note.body && <p>{note.body}</p>}
               </article>
-            </section>
-          )}
-
-          <section className="stats">
-            <Link to="/finances/budget" className="stat">
-              <div className="stat-top">
-                <span className="stat-ico violet"><Icon name="case" size={18} /></span>
-                <span>Dépenses du mois</span>
-                <Icon name="chevron" size={16} />
-              </div>
-              <p className="stat-main"><strong>{money(spent)}</strong> <span>/ {money(state.monthlyBudget)}</span></p>
-              <div className="bar-row">
-                <div className="bar"><span style={{ width: `${pct(spent, state.monthlyBudget)}%` }} /></div>
-                <em>{pct(spent, state.monthlyBudget)}%</em>
-              </div>
-            </Link>
-            <Link to="/finances/epargne" className="stat">
-              <div className="stat-top">
-                <span className="stat-ico green"><Icon name="piggy" size={18} /></span>
-                <span>Épargne familiale</span>
-              </div>
-              <p className="big-green">{money(saved)}</p>
-            </Link>
-            <Link to="/calendrier" className="stat">
-              <div className="stat-top">
-                <span className="stat-ico blue"><Icon name="calendar" size={18} /></span>
-                <span>Prochains rendez-vous</span>
-                <Icon name="chevron" size={16} />
-              </div>
-              <p className="stat-main"><strong className="num-blue">{weekEvents.length}</strong> <span>cette semaine</span></p>
-            </Link>
-            <Link to="/finances/tontines" className="stat">
-              <div className="stat-top">
-                <span className="stat-ico rose"><Icon name="users" size={18} /></span>
-                <span>Tontine · prochaine cotisation</span>
-                <Icon name="chevron" size={16} />
-              </div>
-              <p className="stat-main"><strong className="num-rose">{tontine ? money(tontine.amount) : '—'}</strong> <span>· {nextPay ? formatDayMonth(nextPay.dueDate) : 'aucune'}</span></p>
-            </Link>
-          </section>
-
-          <section className="card">
-            <header className="card-head">
-              <h2>À payer prochainement</h2>
-              <Link to="/finances/budget">Voir le détail</Link>
-            </header>
-            <div className="dues">
-              {dues.map((due) => (
-                <article key={dueKey(due.ref)} className="due">
-                  <div className="between">
-                    <strong>{due.title}</strong>
-                    <StatusPill status={due.status} />
-                  </div>
-                  <p>{describeDue(due, state, name, byId)}</p>
-                  <p className="due-amt">{money(due.amount)} · {formatDayMonth(due.date)}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="split">
-            <article className="card">
-              <header className="card-head">
-                <h2><span className="title-ico"><Icon name="calendar" size={16} /></span> Agenda de la semaine</h2>
-                <Link to="/calendrier">Voir tout</Link>
-              </header>
-              {tasks.length > 0 && (
-                <div className="today-block">
-                  <p className="today-label">Aujourd’hui · {formatDayMonth(today)}</p>
-                  {tasks.map((task) => (
-                    <TaskRow key={task.id} id={task.id} title={task.title} done={task.done} who={name(task.assigneeId)} />
-                  ))}
-                </div>
-              )}
-              <div className="agenda">
-                {weekEvents.map((event) => (
-                  <EventRow key={event.id} event={event} companion={event.companionId ? byId(event.companionId) : undefined} who={name(event.memberId)} />
-                ))}
-              </div>
-            </article>
-            <article className="card">
-              <header className="card-head">
-                <h2><span className="title-ico"><Icon name="target" size={16} /></span> Nos objectifs d’épargne</h2>
-                <Link to="/finances/epargne">Voir tous</Link>
-              </header>
-              <div className="goals">
-                {goals.map((goal) => (
-                  <GoalRow key={goal.id} goal={goal} holder={goal.holderId ? name(goal.holderId) : ''} />
-                ))}
-              </div>
-            </article>
-          </section>
-
-          <section className="bottom3">
-            <article className="card">
-              <header className="card-head">
-                <h2><span className="title-ico"><Icon name="wallet" size={16} /></span> Budget par catégorie</h2>
-                <span className="month-pill">Ce mois-ci</span>
-              </header>
-              <div className="cats">
-                {budgetRows.slice(0, 4).map((row) => {
-                  const value = state.expenses
-                    .filter((e) => e.category === row.category && e.status === 'confirme' && monthKey(e.date) === month)
-                    .reduce((t, e) => t + e.amount, 0);
-                  return (
-                    <div key={row.category} className="cat">
-                      <div className="between">
-                        <span>{CATEGORY_LABEL[row.category]}</span>
-                        <strong>{money(value)} <em>/ {money(row.limit)}</em></strong>
-                      </div>
-                      <div className="bar slim"><span style={{ width: `${Math.min(100, pct(value, row.limit))}%`, background: CATEGORY_COLOR[row.category] }} /></div>
-                    </div>
-                  );
-                })}
-              </div>
-            </article>
-            <article className="card">
-              <header className="card-head">
-                <h2><span className="title-ico"><Icon name="users" size={16} /></span> Tontine familiale</h2>
-                <Link to="/finances/tontines">Voir les détails</Link>
-              </header>
-              <div className="tontine-body">
-                {tontine ? (
-                  <>
-                    <div className="tontine-art" aria-hidden="true"><Icon name="users" size={28} /></div>
-                    <dl>
-                      <div><dt>Participant</dt><dd>{nextTurn?.name ?? '—'}</dd></div>
-                      <div><dt>Cotisation</dt><dd>{money(tontine.amount)} / {tontine.frequency}</dd></div>
-                      <div><dt>Prochain tour</dt><dd>{nextTurn ? formatDayMonth(nextTurn.receptionDate) : '—'}</dd></div>
-                    </dl>
-                  </>
-                ) : <p className="empty">Aucune tontine enregistrée.</p>}
-              </div>
-            </article>
-            <article className="card">
-              <header className="card-head">
-                <h2><span className="title-ico"><Icon name="shield" size={16} /></span> Assurances à suivre</h2>
-                <Link to="/finances/assurances">Voir toutes</Link>
-              </header>
-              <div className="ins-list">
-                {attention.map((item) => (
-                  <Link key={item.id} to="/finances/assurances" className="ins-row">
-                    <span className={`ins-ico ${item.tone}`}><Icon name={item.icon} size={16} /></span>
-                    <span>
-                      <strong>{item.title}</strong>
-                      <small>{item.detail}</small>
-                    </span>
-                    {item.warn ? <em className="warn">!</em> : <Icon name="chevron" size={16} />}
-                  </Link>
-                ))}
-              </div>
-            </article>
-          </section>
-        </div>
+            ))}
+          </article>
+        </section>
       )}
+
+      <section className="stats">
+        <Link to="/finances/budget" className="stat">
+          <div className="stat-top">
+            <span className="stat-ico violet"><Icon name="case" size={18} /></span>
+            <span>Budget restant</span>
+          </div>
+          <p className="stat-main"><strong>{money(remaining)}</strong></p>
+          <div className="bar-row">
+            <div className="bar"><span style={{ width: `${pct(spent, budget || 1)}%` }} /></div>
+          </div>
+          <p className="stat-foot">{money(spent)} dépensés sur {money(budget)}</p>
+        </Link>
+        <Link to="/finances/epargne" className="stat">
+          <div className="stat-top">
+            <span className="stat-ico green"><Icon name="piggy" size={18} /></span>
+            <span>Épargne totale</span>
+          </div>
+          <p className="big-green">{money(saved)}</p>
+          <p className="stat-foot">{goals.length} objectif{goals.length > 1 ? 's' : ''} en cours</p>
+        </Link>
+        <Link to="/calendrier" className="stat">
+          <div className="stat-top">
+            <span className="stat-ico blue"><Icon name="calendar" size={18} /></span>
+            <span>Cette semaine</span>
+          </div>
+          <p className="stat-main"><strong className="num-blue">{weekEvents.length}</strong></p>
+          <p className="stat-foot">rendez-vous</p>
+        </Link>
+        <Link to="/finances/budget" className="stat">
+          <div className="stat-top">
+            <span className="stat-ico rose"><Icon name="bell" size={18} /></span>
+            <span>À régler sous 7 jours</span>
+          </div>
+          <p className="stat-main"><strong className="num-rose">{money(dueTotal)}</strong></p>
+          <p className="stat-foot">{dues.length} échéance{dues.length > 1 ? 's' : ''}{dues.length > 0 ? ' · ' : ''}{dues.length > 0 && <em className="warn-inline">!</em>}</p>
+        </Link>
+      </section>
+
+      <section className="dash-grid">
+        <article className="card">
+          <header className="card-head">
+            <h2><span className="title-ico"><Icon name="calendar" size={16} /></span> Agenda familial</h2>
+            <Link to="/calendrier">Voir tout</Link>
+          </header>
+          {weekEvents.length === 0 && <p className="empty">Aucun rendez-vous cette semaine.</p>}
+          <div className="agenda">
+            {weekEvents.map((event) => (
+              <EventRow key={event.id} event={event} companion={event.companionId ? byId(event.companionId) : undefined} who={name(event.memberId)} />
+            ))}
+          </div>
+        </article>
+
+        <article className="card">
+          <header className="card-head">
+            <h2><span className="title-ico"><Icon name="bell" size={16} /></span> À ne pas oublier</h2>
+            <Link to="/finances/budget">Voir le détail</Link>
+          </header>
+          {reminders.length === 0 && <p className="empty">Rien d’urgent pour le moment.</p>}
+          <div className="reminders">
+            {reminders.map((item) => (
+              <Link key={item.id} to={item.to} className={`reminder ${item.tone}`}>
+                <span>
+                  <strong>{item.title}</strong>
+                  <small>{item.detail}</small>
+                </span>
+                <em>{item.when}</em>
+              </Link>
+            ))}
+          </div>
+        </article>
+
+        <article className="card">
+          <header className="card-head">
+            <h2><span className="title-ico"><Icon name="target" size={16} /></span> Objectifs d’épargne</h2>
+            <Link to="/finances/epargne">Voir tous</Link>
+          </header>
+          {goals.length === 0 && <p className="empty">Aucun objectif d’épargne.</p>}
+          <div className="goals">
+            {goals.slice(0, 4).map((goal) => (
+              <GoalRow key={goal.id} goal={goal} holder={goal.holderId ? name(goal.holderId) : ''} />
+            ))}
+          </div>
+        </article>
+
+        <article className="card">
+          <header className="card-head">
+            <h2><span className="title-ico"><Icon name="check" size={16} /></span> Événements et tâches</h2>
+          </header>
+          {familyEvents.length === 0 && tasks.length === 0 && <p className="empty">Rien à suivre cette semaine.</p>}
+          <div className="event-task-list">
+            {familyEvents.map((event) => (
+              <div key={event.id} className="event-task">
+                <span className="ev-ico amber"><Icon name="cake" size={16} /></span>
+                <span>
+                  <strong>{event.title}</strong>
+                  <small>{formatDayMonth(event.date)} · {name(event.memberId)}</small>
+                </span>
+                <span className="pill pill-prevu">À venir</span>
+              </div>
+            ))}
+            {tasks.map((task) => (
+              <div key={task.id} className="event-task task-line">
+                <TaskRow id={task.id} title={task.title} done={task.done} who={`${name(task.assigneeId)} · ${formatDayMonth(task.due)}`} />
+                {!task.done && <span className="pill pill-declare">En cours</span>}
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+
     </div>
   );
 }
 
+function relativeDays(from: string, to: string) {
+  const start = parseISO(from).getTime();
+  const end = parseISO(to).getTime();
+  const days = Math.round((end - start) / 86_400_000);
+  if (days <= 0) return 'Aujourd’hui';
+  if (days === 1) return 'Demain';
+  return `Dans ${days} jours`;
+}
+
+function parseISO(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function dueKey(ref: { kind: string; id?: string; moveId?: string; paymentId?: string; goalId?: string; tontineId?: string }) {
   return [ref.kind, ref.id, ref.goalId, ref.moveId, ref.tontineId, ref.paymentId].join('-');
-}
-
-function describeDue(
-  due: { ref: { kind: string; id?: string }; who: string },
-  state: { expenses: { id: string; payerId: string; beneficiaryIds: string[] }[] },
-  name: (id?: string) => string,
-  byId: (id?: string) => Person | undefined,
-) {
-  if (due.ref.kind === 'expense' && due.ref.id) {
-    const expense = state.expenses.find((item) => item.id === due.ref.id);
-    if (expense) return `Payé par ${name(expense.payerId)} · ${expense.beneficiaryIds.map((id) => name(id)).join(', ')}`;
-  }
-  if (due.ref.kind === 'policy') return `Souscripteur : ${name(due.who)}`;
-  if (due.ref.kind === 'tontine') {
-    const person = byId(due.who);
-    return `${person ? fullName(person) : due.who} · participant`;
-  }
-  const person = byId(due.who);
-  return person ? `${fullName(person)} · contributeur` : due.who;
-}
-
-function attentionPolicies(policies: { id: string; type: string; subscriberId: string; renewalDate: string; premiumStatus: string }[], name: (id?: string) => string) {
-  const habitation = policies.find((policy) => policy.type === 'Habitation');
-  const life = policies.find((policy) => policy.type === 'Vie');
-  const items: { id: string; title: string; detail: string; icon: IconName; tone: string; warn: boolean }[] = [];
-  if (habitation) {
-    items.push({
-      id: habitation.id,
-      title: 'Habitation',
-      detail: `Renouvellement le ${formatDayMonth(habitation.renewalDate)}`,
-      icon: 'house',
-      tone: 'blue',
-      warn: false,
-    });
-  }
-  if (life && life.premiumStatus !== 'confirme') {
-    items.push({
-      id: life.id,
-      title: `Vie · ${name(life.subscriberId)}`,
-      detail: 'Prime à payer',
-      icon: 'heart',
-      tone: 'pink',
-      warn: true,
-    });
-  }
-  return items;
 }
 
 const EVENT_ICON: Record<CalEvent['kind'], { icon: IconName; tone: string; dot: string }> = {
