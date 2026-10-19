@@ -1,46 +1,51 @@
 using System.Net;
-using System.Net.Mail;
+using System.Net.Http.Json;
 
 namespace FamiRepere.Server;
 
 public sealed class ParentMail
 {
+    readonly HttpClient _http;
     readonly IConfiguration _config;
     readonly ILogger<ParentMail> _log;
 
-    public ParentMail(IConfiguration config, ILogger<ParentMail> log)
+    public ParentMail(HttpClient http, IConfiguration config, ILogger<ParentMail> log)
     {
+        _http = http;
         _config = config;
         _log = log;
+        var baseUrl = config["Mail:BaseUrl"] ?? "https://gisemailsender.gisebs.com";
+        _http.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+        _http.Timeout = TimeSpan.FromSeconds(30);
     }
 
-    public bool Enabled => !string.IsNullOrWhiteSpace(_config["Mail:Host"]);
+    public bool Enabled => !string.IsNullOrWhiteSpace(_config["Mail:ApiKey"]);
 
     public async Task SendAsync(IEnumerable<string> recipients, string subject, string body)
     {
         if (!Enabled) return;
+        var html = WebUtility.HtmlEncode(body).Replace("\n", "<br>");
         foreach (var address in recipients.Where(a => a.Contains('@')).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             try
             {
-                using var message = new MailMessage
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/mail/send");
+                request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _config["Mail:ApiKey"]);
+                request.Content = JsonContent.Create(new
                 {
-                    From = new MailAddress(_config["Mail:From"] ?? _config["Mail:User"] ?? address),
-                    Subject = subject,
-                    Body = body,
-                };
-                message.To.Add(address);
-                var port = int.TryParse(_config["Mail:Port"], out var parsed) ? parsed : 587;
-#pragma warning disable SYSLIB0014
-                using var smtp = new SmtpClient(_config["Mail:Host"], port)
+                    clientCode = _config["Mail:ClientCode"] ?? "FAMIREPERE",
+                    templateCode = _config["Mail:TemplateCode"] ?? "FAMIREPERE_PARENT",
+                    language = "fr",
+                    to = new[] { address },
+                    subjectData = new { Subject = subject },
+                    bodyData = new { Subject = subject, HtmlBody = $"<p>{html}</p>" },
+                });
+                using var response = await _http.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
                 {
-                    EnableSsl = _config["Mail:Ssl"] != "false",
-                };
-#pragma warning restore SYSLIB0014
-                var user = _config["Mail:User"];
-                if (!string.IsNullOrWhiteSpace(user))
-                    smtp.Credentials = new NetworkCredential(user, _config["Mail:Password"]);
-                await smtp.SendMailAsync(message);
+                    var detail = await response.Content.ReadAsStringAsync();
+                    _log.LogWarning("GiseMailSender a refusé le courriel pour {Address} : {Status} {Detail}", address, (int)response.StatusCode, detail);
+                }
             }
             catch (Exception ex)
             {

@@ -60,8 +60,7 @@ jobs:
           echo "SSH_PRIVATE_KEY_UBUNTU1    → ${{ secrets.SSH_PRIVATE_KEY_UBUNTU1 != '' && 'OK' || 'manquant' }}"
           echo "FAMIREPERE_ADMIN_EMAIL     → ${{ secrets.FAMIREPERE_ADMIN_EMAIL != '' && 'OK' || 'manquant' }}"
           echo "FAMIREPERE_ADMIN_PASSWORD  → ${{ secrets.FAMIREPERE_ADMIN_PASSWORD != '' && 'OK' || 'manquant' }}"
-          echo "FAMIREPERE_MAIL_HOST       → ${{ secrets.FAMIREPERE_MAIL_HOST != '' && 'OK' || 'manquant' }}"
-          echo "FAMIREPERE_MAIL_USER       → ${{ secrets.FAMIREPERE_MAIL_USER != '' && 'OK' || 'manquant' }}"
+          echo "FAMIREPERE_MAIL_API_KEY    → ${{ secrets.FAMIREPERE_MAIL_API_KEY != '' && 'OK' || 'manquant' }}"
 
       - name: Load configuration
         env:
@@ -73,11 +72,8 @@ jobs:
           PORT_SECRET: ${{ secrets.FAMIREPERE_SSH_PORT }}
           ADMIN_EMAIL: ${{ secrets.FAMIREPERE_ADMIN_EMAIL }}
           ADMIN_PASSWORD: ${{ secrets.FAMIREPERE_ADMIN_PASSWORD }}
-          MAIL_HOST_SECRET: ${{ secrets.FAMIREPERE_MAIL_HOST }}
-          MAIL_PORT_SECRET: ${{ secrets.FAMIREPERE_MAIL_PORT }}
-          MAIL_USER_SECRET: ${{ secrets.FAMIREPERE_MAIL_USER }}
-          MAIL_PASSWORD_SECRET: ${{ secrets.FAMIREPERE_MAIL_PASSWORD }}
-          MAIL_FROM_SECRET: ${{ secrets.FAMIREPERE_MAIL_FROM }}
+          MAIL_API_KEY_SECRET: ${{ secrets.FAMIREPERE_MAIL_API_KEY }}
+          MAIL_CLIENT_CODE_SECRET: ${{ secrets.FAMIREPERE_MAIL_CLIENT_CODE }}
         run: |
           source deploy/gha-env.sh
           pick_first() {
@@ -102,11 +98,8 @@ jobs:
           gha_write_env HEALTH_URL "http://127.0.0.1:${DEFAULT_LISTEN_PORT}/health"
           gha_write_env SEED_ADMIN_EMAIL "$(gha_sanitize "$ADMIN_EMAIL")"
           gha_write_env SEED_ADMIN_PASSWORD "$ADMIN_PASSWORD"
-          gha_write_env MAIL_HOST "$(gha_sanitize "$MAIL_HOST_SECRET")"
-          gha_write_env MAIL_PORT "$(gha_sanitize "$MAIL_PORT_SECRET")"
-          gha_write_env MAIL_USER "$(gha_sanitize "$MAIL_USER_SECRET")"
-          gha_write_env MAIL_PASSWORD "$MAIL_PASSWORD_SECRET"
-          gha_write_env MAIL_FROM "$(gha_sanitize "$MAIL_FROM_SECRET")"
+          gha_write_env MAIL_API_KEY "$MAIL_API_KEY_SECRET"
+          gha_write_env MAIL_CLIENT_CODE "$(gha_sanitize "$MAIL_CLIENT_CODE_SECRET")"
           if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SSH_HOST_RAW" ]; then
             echo "Hôte SSH ou clé privée manquant." >&2
             exit 1

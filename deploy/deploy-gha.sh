@@ -39,12 +39,9 @@ if [ -n "${SEED_ADMIN_EMAIL:-}" ] && [ -n "${SEED_ADMIN_PASSWORD:-}" ]; then
 else
   UNIT=$(printf '%s\n' "$UNIT" | sed '/SeedAdmin__/d')
 fi
-if [ -n "${MAIL_HOST:-}" ]; then
-  UNIT=${UNIT//__MAIL_HOST__/$MAIL_HOST}
-  UNIT=${UNIT//__MAIL_PORT__/${MAIL_PORT:-587}}
-  UNIT=${UNIT//__MAIL_USER__/${MAIL_USER:-}}
-  UNIT=${UNIT//__MAIL_PASSWORD__/${MAIL_PASSWORD:-}}
-  UNIT=${UNIT//__MAIL_FROM__/${MAIL_FROM:-${MAIL_USER:-}}}
+if [ -n "${MAIL_API_KEY:-}" ]; then
+  UNIT=${UNIT//__MAIL_API_KEY__/$MAIL_API_KEY}
+  UNIT=${UNIT//__MAIL_CLIENT_CODE__/${MAIL_CLIENT_CODE:-FAMIREPERE}}
 else
   UNIT=$(printf '%s\n' "$UNIT" | sed '/Mail__/d')
 fi

@@ -17,13 +17,10 @@ Le workflow `.github/workflows/deploy-production.yml` publie l’interface et l�
 | `FAMIREPERE_SSH_PORT` | `22` |
 | `FAMIREPERE_ADMIN_EMAIL` | aucun compte semé |
 | `FAMIREPERE_ADMIN_PASSWORD` | aucun compte semé |
-| `FAMIREPERE_MAIL_HOST` | aucun courriel |
-| `FAMIREPERE_MAIL_PORT` | `587` |
-| `FAMIREPERE_MAIL_USER` | aucun courriel |
-| `FAMIREPERE_MAIL_PASSWORD` | aucun courriel |
-| `FAMIREPERE_MAIL_FROM` | la valeur de `FAMIREPERE_MAIL_USER` |
+| `FAMIREPERE_MAIL_API_KEY` | aucun courriel |
+| `FAMIREPERE_MAIL_CLIENT_CODE` | `FAMIREPERE` |
 
-Avec `FAMIREPERE_MAIL_HOST`, un parent dont l’identifiant est une adresse reçoit un courriel quand l’autre parent enregistre un rendez-vous, une dépense, un document ou un paiement. Un rappel des sept prochains jours part une fois par jour.
+Les courriels passent par GiseMailSender (`https://gisemailsender.gisebs.com`). Le secret est le jeton API de l’application cliente, en général `FAMIREPERE`. Le modèle `FAMIREPERE_PARENT` est créé au premier envoi avec les variables `Subject` et `HtmlBody`. Un parent dont l’identifiant est une adresse reçoit un courriel quand l’autre parent enregistre un rendez-vous, une dépense, un document ou un paiement. Un rappel des sept prochains jours part une fois par jour.
 
 Si les deux secrets d’administration sont présents, le premier démarrage crée le super administrateur avec cette adresse comme identifiant. Aucun nom ni aucune date de naissance n’est enregistré. Le mot de passe reste dans les secrets GitHub.
 

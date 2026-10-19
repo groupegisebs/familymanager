@@ -14,11 +14,8 @@ Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=ConnectionStrings__Sqlite=Filename=__APP_ROOT__/data/famirepere.db
 Environment=SeedAdmin__Email=__SEED_EMAIL__
 Environment=SeedAdmin__Password=__SEED_PASSWORD__
-Environment=Mail__Host=__MAIL_HOST__
-Environment=Mail__Port=__MAIL_PORT__
-Environment=Mail__User=__MAIL_USER__
-Environment=Mail__Password=__MAIL_PASSWORD__
-Environment=Mail__From=__MAIL_FROM__
+Environment=Mail__ApiKey=__MAIL_API_KEY__
+Environment=Mail__ClientCode=__MAIL_CLIENT_CODE__
 StandardOutput=append:__APP_ROOT__/data/service.log
 StandardError=append:__APP_ROOT__/data/service.log
 

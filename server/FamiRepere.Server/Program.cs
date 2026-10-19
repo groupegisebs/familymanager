@@ -36,7 +36,7 @@ static void TryWriteStartupLog(Exception ex)
 static void Start(WebApplicationBuilder builder, FamilyDb db)
 {
 builder.Services.AddSingleton(db);
-builder.Services.AddSingleton<ParentMail>();
+builder.Services.AddHttpClient<ParentMail>();
 builder.Services.AddHostedService<ParentDigest>();
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
