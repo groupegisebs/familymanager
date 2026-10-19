@@ -1,8 +1,20 @@
 using System.Text.Json;
 using FamiRepere.Server;
 
-var builder = WebApplication.CreateBuilder(args);
-var db = new FamilyDb(builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=data/famirepere.db");
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+    var db = new FamilyDb(builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=data/famirepere.db");
+    Start(builder, db);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine(ex);
+    Environment.ExitCode = 1;
+}
+
+static void Start(WebApplicationBuilder builder, FamilyDb db)
+{
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -161,6 +173,7 @@ void ValidateAccount(string first, string last, int age, string username, string
     if (age < 0 || age > 120) throw new InvalidOperation("Indiquez l’âge.");
     if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3) throw new InvalidOperation("L’identifiant doit contenir au moins 3 caractères.");
     if (password.Length < 8) throw new InvalidOperation("Le mot de passe doit contenir au moins 8 caractères.");
+}
 }
 
 sealed class SetupBody

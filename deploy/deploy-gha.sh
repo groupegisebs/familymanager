@@ -28,7 +28,7 @@ fi
 
 echo "Copie de la publication"
 scp "${SCP_OPTS[@]}" -r publish "$SSH_USER@$SSH_HOST:/tmp/famirepere-publish"
-remote "sudo systemctl stop '$SERVICE_NAME' || true"
+remote "sudo systemctl stop '$SERVICE_NAME' >/dev/null 2>&1 || true"
 remote "rsync -a --delete --exclude appsettings.Production.json /tmp/famirepere-publish/ '$APP_ROOT/app/'"
 remote "rm -rf /tmp/famirepere-publish"
 
@@ -47,4 +47,5 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 echo "Le contrôle de santé a échoué." >&2
 remote "sudo systemctl status '$SERVICE_NAME' --no-pager" || true
+remote "journalctl -u '$SERVICE_NAME' -n 80 --no-pager" || true
 exit 1
