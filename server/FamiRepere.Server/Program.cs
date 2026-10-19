@@ -277,6 +277,8 @@ app.MapPost("/api/investments", (HttpContext ctx, Investment item) =>
         throw new InvalidOperation("Type d’investissement inconnu.");
     if (string.IsNullOrWhiteSpace(item.OwnerId)) throw new InvalidOperation("Indiquez le parent propriétaire.");
     if (item.CurrentValue < 0 || item.InvestedAmount < 0) throw new InvalidOperation("Les montants ne peuvent pas être négatifs.");
+    item.Details ??= new Dictionary<string, string>();
+    RequireDetails(item.Type, item.Details, true);
     item.Label = item.Label.Trim();
     item.Institution = item.Institution?.Trim() ?? "";
     item.AccountRef = item.AccountRef?.Trim() ?? "";
@@ -292,6 +294,8 @@ app.MapPost("/api/assets", (HttpContext ctx, Asset item) =>
     if (string.IsNullOrWhiteSpace(item.OwnerId)) throw new InvalidOperation("Indiquez le parent propriétaire.");
     if (item.EstimatedValue < 0 || item.PurchaseValue < 0) throw new InvalidOperation("Les montants ne peuvent pas être négatifs.");
     if (item.SharePercent is < 0 or > 100) throw new InvalidOperation("La part doit être entre 0 et 100 %.");
+    item.Details ??= new Dictionary<string, string>();
+    RequireDetails(item.Type, item.Details, false);
     item.Label = item.Label.Trim();
     item.Description = item.Description?.Trim() ?? "";
     item.CoOwnerId = item.CoOwnerId?.Trim() ?? "";
@@ -412,6 +416,34 @@ static string? HeaderHost(string value)
     if (string.IsNullOrWhiteSpace(value)) return null;
     var name = value.Split(',')[0].Trim().Split(':')[0];
     return string.IsNullOrEmpty(name) ? null : name;
+}
+
+static void RequireDetails(string type, Dictionary<string, string> details, bool investment)
+{
+    var keys = investment ? type switch
+    {
+        "reer" or "celi" => new[] { "contributionRoom", "beneficiary", "contributionYear" },
+        "actions" => ["ticker", "exchange", "shares", "purchasePrice"],
+        "obligations" => ["issuer", "faceValue", "couponRate", "maturityDate"],
+        "fonds" => ["fundCode", "units"],
+        "crypto" => ["symbol", "quantity", "network", "wallet"],
+        "compte" => ["accountType", "interestRate", "currency"],
+        _ => new[] { "nature" },
+    } : type switch
+    {
+        "immobilier" => ["address", "cadastral", "areaSqm", "rooms", "mortgageBalance"],
+        "terrain" => ["address", "cadastral", "areaSqm", "zoning"],
+        "vehicule" => ["make", "model", "year", "vin", "plate", "mileage"],
+        "entreprise" => ["legalName", "registrationNumber", "activity", "ownershipPercent"],
+        "objet" => ["brand", "serial", "appraisalDate"],
+        _ => new[] { "nature" },
+    };
+    foreach (var key in keys)
+    {
+        if (!details.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperation("Complétez tous les détails exigés pour ce type.");
+        details[key] = value.Trim();
+    }
 }
 
 void ValidateAccount(string first, string last, int age, string username, string password)

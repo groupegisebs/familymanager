@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { canSeeExpense, canSeeGoal, canSeePolicy, canSeePolicyDetails, goalByStatus, goalConfirmed, monthFlow } from '../access';
 import { BUDGET_CATEGORIES } from '../data';
-import { ASSET_TYPE_LABEL, CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, INCOME_FREQUENCY_LABEL, INCOME_KIND_LABEL, INVESTMENT_TYPE_LABEL, TONTINE_FREQUENCY, advanceLabel, formatDayMonth, fullName, money, monthKey, nextStatus, nextTontineDue, pct, todayISO } from '../format';
+import { ASSET_DETAIL_FIELDS, ASSET_TYPE_LABEL, CATEGORY_COLOR, CATEGORY_LABEL, GOAL_KIND_LABEL, INCOME_FREQUENCY_LABEL, INCOME_KIND_LABEL, INVESTMENT_DETAIL_FIELDS, INVESTMENT_TYPE_LABEL, TONTINE_FREQUENCY, advanceLabel, detailLabel, formatDayMonth, fullName, money, monthKey, nextStatus, nextTontineDue, pct, todayISO } from '../format';
 import type { AssetType, IncomeFrequency, IncomeKind, InvestmentType, PayStatus } from '../types';
 import { StatusPill, useFamily } from '../components/ui';
 
@@ -373,6 +373,7 @@ function WealthPane() {
             {item.accountRef && <p>Référence : {item.accountRef}</p>}
             <p>Investi {money(item.investedAmount)} · acquis le {formatDayMonth(item.acquiredDate)}</p>
             {item.expectedYield && <p>Rendement prévu : {item.expectedYield}</p>}
+            <DetailList details={item.details} />
             {item.notes && <p>{item.notes}</p>}
           </article>
         ))}
@@ -393,12 +394,53 @@ function WealthPane() {
             <p>Part détenue : {item.sharePercent || 100} % · acquis le {formatDayMonth(item.acquiredDate)}</p>
             <p>Valeur d’achat {money(item.purchaseValue)} · valeur estimée {money(item.estimatedValue)}</p>
             {item.location && <p>Lieu : {item.location}</p>}
+            <DetailList details={item.details} />
             {item.notes && <p>{item.notes}</p>}
           </article>
         ))}
         <AssetForm parents={parents} />
       </section>
     </div>
+  );
+}
+
+function DetailList({ details }: { details?: Record<string, string> }) {
+  const entries = Object.entries(details ?? {}).filter(([, value]) => value.trim());
+  if (entries.length === 0) return null;
+  return (
+    <ul className="detail-list">
+      {entries.map(([key, value]) => (
+        <li key={key}><em>{detailLabel(key)}</em> {value}</li>
+      ))}
+    </ul>
+  );
+}
+
+function DetailFields({
+  fields,
+  values,
+  onChange,
+}: {
+  fields: { key: string; label: string; required?: boolean; placeholder?: string; kind?: 'text' | 'number' | 'date' }[];
+  values: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+}) {
+  return (
+    <>
+      <p className="hint field-wide">Détails exigés pour ce type</p>
+      {fields.map((field) => (
+        <label key={field.key} className="field">
+          {field.label}{field.required ? ' *' : ''}
+          <input
+            type={field.kind === 'number' ? 'number' : field.kind === 'date' ? 'date' : 'text'}
+            value={values[field.key] ?? ''}
+            placeholder={field.placeholder}
+            required={field.required}
+            onChange={(e) => onChange(field.key, e.target.value)}
+          />
+        </label>
+      ))}
+    </>
   );
 }
 
@@ -415,9 +457,12 @@ function InvestmentForm({ parents }: { parents: { id: string; firstName: string;
     acquiredDate: todayISO(),
     expectedYield: '',
     notes: '',
+    details: {} as Record<string, string>,
   });
+  const typeFields = INVESTMENT_DETAIL_FIELDS[form.type];
   async function submit(event: FormEvent) {
     event.preventDefault();
+    const details = Object.fromEntries(typeFields.map((field) => [field.key, (form.details[field.key] ?? '').trim()]));
     await addInvestment({
       id: uid('inv'),
       label: form.label,
@@ -430,8 +475,9 @@ function InvestmentForm({ parents }: { parents: { id: string; firstName: string;
       acquiredDate: form.acquiredDate,
       expectedYield: form.expectedYield,
       notes: form.notes,
+      details,
     });
-    setForm({ ...form, label: '', institution: '', accountRef: '', investedAmount: '', currentValue: '', expectedYield: '', notes: '' });
+    setForm({ ...form, label: '', institution: '', accountRef: '', investedAmount: '', currentValue: '', expectedYield: '', notes: '', details: {} });
     notify('L’investissement est enregistré.');
   }
   return (
@@ -439,12 +485,12 @@ function InvestmentForm({ parents }: { parents: { id: string; firstName: string;
       <header className="card-head field-wide"><h2>Nouvel investissement</h2></header>
       <label className="field">Libellé<input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required /></label>
       <label className="field">Type
-        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as InvestmentType })}>
+        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as InvestmentType, details: {} })}>
           {Object.entries(INVESTMENT_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label>
-      <label className="field">Institution<input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} placeholder="Banque, courtier…" /></label>
-      <label className="field">N° / référence<input value={form.accountRef} onChange={(e) => setForm({ ...form, accountRef: e.target.value })} /></label>
+      <label className="field">Institution<input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} placeholder="Banque, courtier…" required /></label>
+      <label className="field">N° / référence<input value={form.accountRef} onChange={(e) => setForm({ ...form, accountRef: e.target.value })} required /></label>
       <label className="field">Parent propriétaire
         <select value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })}>
           {parents.map((person) => <option key={person.id} value={person.id}>{fullName(person)}</option>)}
@@ -453,7 +499,8 @@ function InvestmentForm({ parents }: { parents: { id: string; firstName: string;
       <label className="field">Date d’acquisition<input type="date" value={form.acquiredDate} onChange={(e) => setForm({ ...form, acquiredDate: e.target.value })} required /></label>
       <label className="field">Montant investi<input type="number" min={0} value={form.investedAmount} onChange={(e) => setForm({ ...form, investedAmount: e.target.value })} required /></label>
       <label className="field">Valeur actuelle<input type="number" min={0} value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} required /></label>
-      <label className="field">Rendement prévu<input value={form.expectedYield} onChange={(e) => setForm({ ...form, expectedYield: e.target.value })} placeholder="ex. 5 % / an" /></label>
+      <label className="field">Rendement prévu<input value={form.expectedYield} onChange={(e) => setForm({ ...form, expectedYield: e.target.value })} placeholder="ex. 5 % / an" required /></label>
+      <DetailFields fields={typeFields} values={form.details} onChange={(key, value) => setForm({ ...form, details: { ...form.details, [key]: value } })} />
       <label className="field field-wide">Notes<textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></label>
       <button className="btn btn-primary" type="submit">Enregistrer l’investissement</button>
     </form>
@@ -474,9 +521,12 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
     location: '',
     sharePercent: '100',
     notes: '',
+    details: {} as Record<string, string>,
   });
+  const typeFields = ASSET_DETAIL_FIELDS[form.type];
   async function submit(event: FormEvent) {
     event.preventDefault();
+    const details = Object.fromEntries(typeFields.map((field) => [field.key, (form.details[field.key] ?? '').trim()]));
     await addAsset({
       id: uid('ast'),
       label: form.label,
@@ -487,11 +537,12 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
       estimatedValue: Number(form.estimatedValue),
       purchaseValue: Number(form.purchaseValue),
       acquiredDate: form.acquiredDate,
-      location: form.location,
+      location: form.type === 'immobilier' || form.type === 'terrain' ? (details.address || form.location) : form.location,
       sharePercent: Number(form.sharePercent),
       notes: form.notes,
+      details,
     });
-    setForm({ ...form, label: '', description: '', coOwnerId: '', estimatedValue: '', purchaseValue: '', location: '', sharePercent: '100', notes: '' });
+    setForm({ ...form, label: '', description: '', coOwnerId: '', estimatedValue: '', purchaseValue: '', location: '', sharePercent: '100', notes: '', details: {} });
     notify('Le bien patrimonial est enregistré.');
   }
   return (
@@ -499,11 +550,11 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
       <header className="card-head field-wide"><h2>Nouveau bien patrimonial</h2></header>
       <label className="field">Libellé<input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required /></label>
       <label className="field">Type
-        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as AssetType })}>
+        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as AssetType, details: {} })}>
           {Object.entries(ASSET_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label>
-      <label className="field field-wide">Description<input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Maison, terrain, véhicule…" /></label>
+      <label className="field field-wide">Description<input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Maison, terrain, véhicule…" required /></label>
       <label className="field">Parent propriétaire
         <select value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })}>
           {parents.map((person) => <option key={person.id} value={person.id}>{fullName(person)}</option>)}
@@ -519,7 +570,7 @@ function AssetForm({ parents }: { parents: { id: string; firstName: string; last
       <label className="field">Date d’acquisition<input type="date" value={form.acquiredDate} onChange={(e) => setForm({ ...form, acquiredDate: e.target.value })} required /></label>
       <label className="field">Valeur d’achat<input type="number" min={0} value={form.purchaseValue} onChange={(e) => setForm({ ...form, purchaseValue: e.target.value })} required /></label>
       <label className="field">Valeur estimée<input type="number" min={0} value={form.estimatedValue} onChange={(e) => setForm({ ...form, estimatedValue: e.target.value })} required /></label>
-      <label className="field field-wide">Lieu / adresse<input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label>
+      <DetailFields fields={typeFields} values={form.details} onChange={(key, value) => setForm({ ...form, details: { ...form.details, [key]: value } })} />
       <label className="field field-wide">Notes<textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></label>
       <button className="btn btn-primary" type="submit">Enregistrer le bien</button>
     </form>

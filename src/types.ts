@@ -168,6 +168,7 @@ export type Investment = {
   acquiredDate: string;
   expectedYield: string;
   notes: string;
+  details: Record<string, string>;
 };
 
 export type AssetType = 'immobilier' | 'terrain' | 'vehicule' | 'entreprise' | 'objet' | 'autre';
@@ -185,6 +186,7 @@ export type Asset = {
   location: string;
   sharePercent: number;
   notes: string;
+  details: Record<string, string>;
 };
 
 export type DocCategory = 'facture' | 'scolaire' | 'assurance' | 'medical' | 'autorisation' | 'autre';

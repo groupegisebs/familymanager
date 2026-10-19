@@ -159,6 +159,7 @@ public sealed class Investment
     public string AcquiredDate { get; set; } = "";
     public string ExpectedYield { get; set; } = "";
     public string Notes { get; set; } = "";
+    public Dictionary<string, string> Details { get; set; } = new();
 }
 
 public sealed class Asset
@@ -175,6 +176,7 @@ public sealed class Asset
     public string Location { get; set; } = "";
     public decimal SharePercent { get; set; } = 100;
     public string Notes { get; set; } = "";
+    public Dictionary<string, string> Details { get; set; } = new();
 }
 
 public sealed class DocItem

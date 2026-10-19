@@ -100,6 +100,101 @@ export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
   autre: 'Autre',
 };
 
+export type DetailField = { key: string; label: string; required?: boolean; placeholder?: string; kind?: 'text' | 'number' | 'date' };
+
+export const INVESTMENT_DETAIL_FIELDS: Record<InvestmentType, DetailField[]> = {
+  reer: [
+    { key: 'contributionRoom', label: 'Droits de cotisation restants', kind: 'number', required: true },
+    { key: 'beneficiary', label: 'Bénéficiaire au décès', required: true },
+    { key: 'contributionYear', label: 'Année de cotisation', kind: 'number', required: true },
+    { key: 'lockedUntil', label: 'Date de retrait possible', kind: 'date' },
+  ],
+  celi: [
+    { key: 'contributionRoom', label: 'Droits de cotisation restants', kind: 'number', required: true },
+    { key: 'beneficiary', label: 'Bénéficiaire au décès', required: true },
+    { key: 'contributionYear', label: 'Année de cotisation', kind: 'number', required: true },
+  ],
+  actions: [
+    { key: 'ticker', label: 'Symbole / ticker', required: true, placeholder: 'ex. RY.TO' },
+    { key: 'exchange', label: 'Bourse', required: true, placeholder: 'TSX, NYSE…' },
+    { key: 'shares', label: 'Nombre d’actions', kind: 'number', required: true },
+    { key: 'purchasePrice', label: 'Prix d’achat unitaire', kind: 'number', required: true },
+  ],
+  obligations: [
+    { key: 'issuer', label: 'Émetteur', required: true },
+    { key: 'faceValue', label: 'Valeur nominale', kind: 'number', required: true },
+    { key: 'couponRate', label: 'Taux du coupon', required: true, placeholder: 'ex. 3,5 %' },
+    { key: 'maturityDate', label: 'Date d’échéance', kind: 'date', required: true },
+  ],
+  fonds: [
+    { key: 'fundCode', label: 'Code du fonds / FNB', required: true },
+    { key: 'units', label: 'Nombre de parts', kind: 'number', required: true },
+    { key: 'managementFee', label: 'Frais de gestion (RFG)', placeholder: 'ex. 0,25 %' },
+    { key: 'category', label: 'Catégorie', placeholder: 'actions, obligations…' },
+  ],
+  crypto: [
+    { key: 'symbol', label: 'Symbole', required: true, placeholder: 'BTC, ETH…' },
+    { key: 'quantity', label: 'Quantité', kind: 'number', required: true },
+    { key: 'network', label: 'Réseau', required: true, placeholder: 'Bitcoin, Ethereum…' },
+    { key: 'wallet', label: 'Portefeuille / plateforme', required: true },
+  ],
+  compte: [
+    { key: 'accountType', label: 'Type de compte', required: true, placeholder: 'épargne, courtage…' },
+    { key: 'interestRate', label: 'Taux d’intérêt', required: true },
+    { key: 'currency', label: 'Devise', required: true, placeholder: 'CAD, USD…' },
+  ],
+  autre: [
+    { key: 'nature', label: 'Nature du placement', required: true },
+    { key: 'terms', label: 'Conditions particulières' },
+  ],
+};
+
+export const ASSET_DETAIL_FIELDS: Record<AssetType, DetailField[]> = {
+  immobilier: [
+    { key: 'address', label: 'Adresse complète', required: true },
+    { key: 'cadastral', label: 'N° cadastral / lot', required: true },
+    { key: 'areaSqm', label: 'Superficie (m²)', kind: 'number', required: true },
+    { key: 'rooms', label: 'Pièces / chambres', required: true },
+    { key: 'mortgageBalance', label: 'Solde hypothécaire', kind: 'number', required: true },
+    { key: 'propertyTax', label: 'Taxes municipales annuelles', kind: 'number' },
+  ],
+  terrain: [
+    { key: 'address', label: 'Emplacement', required: true },
+    { key: 'cadastral', label: 'N° cadastral / lot', required: true },
+    { key: 'areaSqm', label: 'Superficie (m²)', kind: 'number', required: true },
+    { key: 'zoning', label: 'Zonage', required: true },
+  ],
+  vehicule: [
+    { key: 'make', label: 'Marque', required: true },
+    { key: 'model', label: 'Modèle', required: true },
+    { key: 'year', label: 'Année', kind: 'number', required: true },
+    { key: 'vin', label: 'NIV / VIN', required: true },
+    { key: 'plate', label: 'Immatriculation', required: true },
+    { key: 'mileage', label: 'Kilométrage', kind: 'number', required: true },
+  ],
+  entreprise: [
+    { key: 'legalName', label: 'Raison sociale', required: true },
+    { key: 'registrationNumber', label: 'N° d’entreprise', required: true },
+    { key: 'activity', label: 'Activité', required: true },
+    { key: 'ownershipPercent', label: 'Part détenue dans l’entreprise (%)', kind: 'number', required: true },
+  ],
+  objet: [
+    { key: 'brand', label: 'Marque / artisan', required: true },
+    { key: 'serial', label: 'N° de série / certificat', required: true },
+    { key: 'appraisalDate', label: 'Date d’évaluation', kind: 'date', required: true },
+    { key: 'insurer', label: 'Assureur du bien' },
+  ],
+  autre: [
+    { key: 'nature', label: 'Nature du bien', required: true },
+    { key: 'identifier', label: 'Identifiant / référence' },
+  ],
+};
+
+export function detailLabel(key: string) {
+  const all = [...Object.values(INVESTMENT_DETAIL_FIELDS), ...Object.values(ASSET_DETAIL_FIELDS)].flat();
+  return all.find((field) => field.key === key)?.label ?? key;
+}
+
 export const WEEKDAYS_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
 export function formatTime(t: string) {
