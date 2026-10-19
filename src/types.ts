@@ -169,6 +169,22 @@ export type Task = {
   activityId?: string;
 };
 
+export type ChildRequest = {
+  id: string;
+  authorId: string;
+  title: string;
+  detail: string;
+  date: string;
+};
+
+export type ChildNote = {
+  id: string;
+  authorId: string;
+  title: string;
+  body: string;
+  date: string;
+};
+
 export type AppState = {
   people: Person[];
   incomes: Income[];
@@ -180,6 +196,8 @@ export type AppState = {
   policies: Policy[];
   documents: DocItem[];
   tasks: Task[];
+  requests: ChildRequest[];
+  notes: ChildNote[];
   viewerId: string;
   maskNotifications: boolean;
   monthlyBudget: number;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { ActivityBundle, AppState, CalEvent, CategoryLimits, DocItem, DueRef, Expense, Goal, Income, Policy, Task, Tontine } from './types';
+import type { ActivityBundle, AppState, CalEvent, CategoryLimits, ChildNote, ChildRequest, DocItem, DueRef, Expense, Goal, Income, Policy, Task, Tontine } from './types';
 
 type Phase = 'loading' | 'setup' | 'login' | 'ready';
 
@@ -34,6 +34,9 @@ type Store = {
   addExpense: (expense: Expense) => Promise<void>;
   addGoal: (goal: Goal) => Promise<void>;
   addTask: (task: Task) => Promise<void>;
+  addRequest: (request: ChildRequest) => Promise<void>;
+  addNote: (note: ChildNote) => Promise<void>;
+  addChildEvent: (event: CalEvent) => Promise<void>;
   addDocument: (document: DocItem) => Promise<void>;
   addIncome: (income: Income) => Promise<void>;
   addTontine: (tontine: Tontine) => Promise<void>;
@@ -131,6 +134,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addExpense: (expense) => run('/api/expenses', expense),
     addGoal: (goal) => run('/api/goals', goal),
     addTask: (task) => run('/api/tasks', task),
+    addRequest: (request) => run('/api/requests', request),
+    addNote: (note) => run('/api/notes', note),
+    addChildEvent: (event) => run('/api/child/event', event),
     addDocument: (document) => run('/api/documents', document),
     addIncome: (income) => run('/api/incomes', income),
     addTontine: (tontine) => run('/api/tontines', tontine),

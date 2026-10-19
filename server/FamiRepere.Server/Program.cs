@@ -135,6 +135,55 @@ app.MapPost("/api/activities", (HttpContext ctx, ActivityBundle bundle) =>
 });
 
 app.MapPost("/api/events", (HttpContext ctx, CalEvent item) => Save(ctx, "event", item.Id, item));
+app.MapPost("/api/child/event", (HttpContext ctx, CalEvent item) =>
+{
+    var child = Child(ctx);
+    RequireId(item.Id);
+    if (string.IsNullOrWhiteSpace(item.Title)) throw new InvalidOperation("Indiquez un intitulé.");
+    if (item.Title.Length > 120) throw new InvalidOperation("L’intitulé est trop long.");
+    if (string.IsNullOrWhiteSpace(item.Date)) throw new InvalidOperation("Indiquez une date.");
+    item.MemberId = child.Id;
+    item.Kind = "famille";
+    item.Audience = "famille";
+    item.Sensitive = "aucune";
+    item.CompanionId = null;
+    item.TransportId = null;
+    item.Professional = null;
+    item.ActivityId = null;
+    item.SharedWithIds = [];
+    item.Notes = Trim(item.Notes, 2000);
+    item.Place = Trim(item.Place, 120);
+    item.Time = Trim(item.Time, 8) ?? "";
+    db.Add("event", item.Id, item);
+    Tell(child, "Événement", $"{item.Title}\n{item.Date} {item.Time}".Trim());
+    return Results.Ok(db.View(child));
+});
+app.MapPost("/api/requests", (HttpContext ctx, ChildRequest item) =>
+{
+    var child = Child(ctx);
+    RequireId(item.Id);
+    if (string.IsNullOrWhiteSpace(item.Title)) throw new InvalidOperation("Indiquez un intitulé.");
+    item.AuthorId = child.Id;
+    item.Title = item.Title.Trim();
+    item.Detail = Trim(item.Detail, 2000) ?? "";
+    item.Date = string.IsNullOrWhiteSpace(item.Date) ? DateTime.UtcNow.ToString("yyyy-MM-dd") : item.Date;
+    db.Add("request", item.Id, item);
+    Tell(child, "Demande", $"{item.Title}\n{item.Detail}".Trim());
+    return Results.Ok(db.View(child));
+});
+app.MapPost("/api/notes", (HttpContext ctx, ChildNote item) =>
+{
+    var child = Child(ctx);
+    RequireId(item.Id);
+    if (string.IsNullOrWhiteSpace(item.Title) && string.IsNullOrWhiteSpace(item.Body)) throw new InvalidOperation("Écrivez la note.");
+    item.AuthorId = child.Id;
+    item.Title = string.IsNullOrWhiteSpace(item.Title) ? "Note" : item.Title.Trim();
+    item.Body = Trim(item.Body, 2000) ?? "";
+    item.Date = string.IsNullOrWhiteSpace(item.Date) ? DateTime.UtcNow.ToString("yyyy-MM-dd") : item.Date;
+    db.Add("note", item.Id, item);
+    Tell(child, "Note", $"{item.Title}\n{item.Body}".Trim());
+    return Results.Ok(db.View(child));
+});
 app.MapPost("/api/expenses", (HttpContext ctx, Expense item) => Save(ctx, "expense", item.Id, item));
 app.MapPost("/api/goals", (HttpContext ctx, Goal item) => Save(ctx, "goal", item.Id, item));
 app.MapPost("/api/tasks", (HttpContext ctx, FamTask item) => Save(ctx, "task", item.Id, item));
@@ -195,6 +244,20 @@ void WriteCookie(HttpContext ctx, string token)
 Person? Current(HttpContext ctx) => db.FindBySession(ReadCookie(ctx));
 
 Person Required(HttpContext ctx) => Current(ctx) ?? throw new InvalidOperation("Connectez-vous.");
+
+Person Child(HttpContext ctx)
+{
+    var person = Required(ctx);
+    if (person.Role != "enfant") throw new InvalidOperation("Cette action est réservée à un enfant.");
+    return person;
+}
+
+static string? Trim(string? value, int max)
+{
+    if (string.IsNullOrWhiteSpace(value)) return null;
+    var text = value.Trim();
+    return text.Length <= max ? text : text[..max];
+}
 
 Person Parent(HttpContext ctx)
 {

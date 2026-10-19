@@ -81,7 +81,7 @@ export function Shell() {
             <p>{heading.sub}</p>
           </div>
           <div className="actions">
-            {viewer.role === 'parent' && (
+            {(viewer.role === 'parent' || viewer.role === 'enfant') && (
               <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" size={18} />
                 Ajouter

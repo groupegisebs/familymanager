@@ -153,6 +153,8 @@ public sealed class FamilyDb
             Policies = Load<Policy>(db, "policy"),
             Documents = Load<DocItem>(db, "document"),
             Tasks = Load<FamTask>(db, "task"),
+            Requests = Load<ChildRequest>(db, "request"),
+            Notes = Load<ChildNote>(db, "note"),
             CategoryLimits = limits,
             MonthlyBudget = limits.Logement + limits.Alimentation + limits.Enfants + limits.Transport + limits.Sante + limits.Loisirs,
         };

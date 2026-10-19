@@ -105,6 +105,33 @@ function ParentHome() {
             </div>
           </section>
 
+          {(state.requests.length > 0 || state.notes.length > 0) && (
+            <section className="split">
+              <article className="card">
+                <header className="card-head"><h2>Demandes des enfants</h2></header>
+                {state.requests.length === 0 && <p className="empty">Aucune demande.</p>}
+                {state.requests.map((request) => (
+                  <article key={request.id} className="item">
+                    <strong>{request.title}</strong>
+                    <p>{name(request.authorId)} · {formatDayMonth(request.date)}</p>
+                    {request.detail && <p>{request.detail}</p>}
+                  </article>
+                ))}
+              </article>
+              <article className="card">
+                <header className="card-head"><h2>Notes des enfants</h2></header>
+                {state.notes.length === 0 && <p className="empty">Aucune note.</p>}
+                {state.notes.map((note) => (
+                  <article key={note.id} className="item">
+                    <strong>{note.title}</strong>
+                    <p>{name(note.authorId)} · {formatDayMonth(note.date)}</p>
+                    {note.body && <p>{note.body}</p>}
+                  </article>
+                ))}
+              </article>
+            </section>
+          )}
+
           <section className="stats">
             <Link to="/finances/budget" className="stat">
               <div className="stat-top">
@@ -394,6 +421,28 @@ function ChildHome() {
           <h2>{fullName(viewer)}</h2>
           <p>Vos activités, vos tâches et ce qui vous concerne.</p>
         </div>
+      </section>
+      <section className="split">
+        <article className="card">
+          <header className="card-head"><h2>Mes demandes</h2></header>
+          {state.requests.filter((request) => request.authorId === viewer.id).length === 0 && <p className="empty">Aucune demande pour le moment.</p>}
+          {state.requests.filter((request) => request.authorId === viewer.id).map((request) => (
+            <article key={request.id} className="item">
+              <strong>{request.title}</strong>
+              {request.detail && <p>{request.detail}</p>}
+            </article>
+          ))}
+        </article>
+        <article className="card">
+          <header className="card-head"><h2>Mes notes</h2></header>
+          {state.notes.filter((note) => note.authorId === viewer.id).length === 0 && <p className="empty">Aucune note pour le moment.</p>}
+          {state.notes.filter((note) => note.authorId === viewer.id).map((note) => (
+            <article key={note.id} className="item">
+              <strong>{note.title}</strong>
+              {note.body && <p>{note.body}</p>}
+            </article>
+          ))}
+        </article>
       </section>
       <section className="split">
         <article className="card">

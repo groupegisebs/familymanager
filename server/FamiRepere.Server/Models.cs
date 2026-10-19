@@ -164,6 +164,24 @@ public sealed class FamTask
     public string? ActivityId { get; set; }
 }
 
+public sealed class ChildRequest
+{
+    public string Id { get; set; } = "";
+    public string AuthorId { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public string Date { get; set; } = "";
+}
+
+public sealed class ChildNote
+{
+    public string Id { get; set; } = "";
+    public string AuthorId { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    public string Date { get; set; } = "";
+}
+
 public sealed class CategoryLimits
 {
     public decimal Logement { get; set; }
@@ -186,6 +204,8 @@ public sealed class AppState
     public List<Policy> Policies { get; set; } = [];
     public List<DocItem> Documents { get; set; } = [];
     public List<FamTask> Tasks { get; set; } = [];
+    public List<ChildRequest> Requests { get; set; } = [];
+    public List<ChildNote> Notes { get; set; } = [];
     public string ViewerId { get; set; } = "";
     public bool MaskNotifications { get; set; } = true;
     public decimal MonthlyBudget { get; set; }

@@ -23,6 +23,8 @@ export function createEmpty(): AppState {
     policies: [],
     documents: [],
     tasks: [],
+    requests: [],
+    notes: [],
     monthlyBudget: 0,
     categoryLimits: {
       logement: 0,

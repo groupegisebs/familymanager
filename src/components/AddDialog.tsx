@@ -19,6 +19,130 @@ function uid(prefix: string) {
 }
 
 export function AddDialog() {
+  const family = useFamily();
+  if (family.viewer.role === 'enfant') return <ChildAdd />;
+  return <ParentAdd />;
+}
+
+function ChildAdd() {
+  const { addOpen, setAddOpen, notify, addRequest, addNote, addChildEvent, viewer } = useFamily();
+  const [kind, setKind] = useState<'demande' | 'evenement' | 'note'>('demande');
+  const [title, setTitle] = useState('');
+  const [detail, setDetail] = useState('');
+  const [date, setDate] = useState(todayISO());
+  const [time, setTime] = useState('16:00');
+  const [place, setPlace] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!addOpen) return;
+    setKind('demande');
+    setTitle('');
+    setDetail('');
+    setDate(todayISO());
+    setTime('16:00');
+    setPlace('');
+    setError('');
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAddOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [addOpen, setAddOpen]);
+
+  if (!addOpen) return null;
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    try {
+      const name = title.trim();
+      if (kind !== 'note' && !name) {
+        setError('Indiquez un intitulé.');
+        return;
+      }
+      if (kind === 'note' && !name && !detail.trim()) {
+        setError('Écrivez la note.');
+        return;
+      }
+      if (kind === 'demande') {
+        await addRequest({ id: uid('req'), authorId: viewer.id, title: name, detail: detail.trim(), date: todayISO() });
+        notify('La demande est transmise aux parents.');
+      } else if (kind === 'evenement') {
+        if (!date) {
+          setError('Indiquez une date.');
+          return;
+        }
+        await addChildEvent({
+          id: uid('ev'),
+          title: name,
+          kind: 'famille',
+          date,
+          time,
+          memberId: viewer.id,
+          place: place.trim() || undefined,
+          notes: detail.trim() || undefined,
+          audience: 'famille',
+          sensitive: 'aucune',
+          sharedWithIds: [],
+        });
+        notify('L’événement est au calendrier familial.');
+      } else {
+        await addNote({ id: uid('note'), authorId: viewer.id, title: name || 'Note', body: detail.trim(), date: todayISO() });
+        notify('La note est enregistrée.');
+      }
+      setAddOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Enregistrement impossible.');
+    }
+  }
+
+  return (
+    <div className="modal-back" onMouseDown={() => setAddOpen(false)}>
+      <form className="modal" onMouseDown={(e) => e.stopPropagation()} onSubmit={submit}>
+        <div className="between">
+          <h2>Écrire</h2>
+          <button type="button" className="btn btn-ghost" onClick={() => setAddOpen(false)}>Fermer</button>
+        </div>
+        <div className="kinds">
+          {([
+            ['demande', 'Demande', 'Une question ou un besoin pour les parents'],
+            ['evenement', 'Événement', 'Une date à mettre au calendrier'],
+            ['note', 'Note', 'Un mot à laisser à la famille'],
+          ] as const).map(([id, label, text]) => (
+            <button key={id} type="button" className={kind === id ? 'kind on' : 'kind'} onClick={() => setKind(id)}>
+              <strong>{label}</strong>
+              <small>{text}</small>
+            </button>
+          ))}
+        </div>
+        <div className="form-grid">
+          <label className="field span-2">
+            <span>Intitulé</span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={kind === 'note' ? 'Facultatif' : 'Intitulé'} />
+          </label>
+          {kind === 'evenement' && (
+            <>
+              <Field label="Date" type="date" value={date} onChange={setDate} />
+              <Field label="Heure" type="time" value={time} onChange={setTime} />
+              <Field label="Lieu" value={place} onChange={setPlace} />
+            </>
+          )}
+          <label className="field span-2">
+            <span>{kind === 'evenement' ? 'Précision' : 'Message'}</span>
+            <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={4} />
+          </label>
+        </div>
+        {error && <p className="error">{error}</p>}
+        <div className="form-actions">
+          <button className="btn btn-primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ParentAdd() {
   const { addOpen, setAddOpen, state, notify, addActivity, addEvent, addExpense, addGoal, addTask, addDocument } = useFamily();
   const parents = state.people.filter((p) => p.role === 'parent');
   const children = state.people.filter((p) => p.role === 'enfant');

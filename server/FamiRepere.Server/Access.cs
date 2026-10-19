@@ -15,6 +15,8 @@ public static class Access
 
         state.Events = full.Events.Where(e => CanSeeEvent(viewer, e)).ToList();
         state.Tasks = full.Tasks.Where(t => CanSeeTask(viewer, t)).ToList();
+        state.Requests = full.Requests.Where(r => CanSeeAuthor(viewer, r.AuthorId)).ToList();
+        state.Notes = full.Notes.Where(n => CanSeeAuthor(viewer, n.AuthorId)).ToList();
         state.Documents = full.Documents.Where(d => CanSeeDoc(viewer, d)).ToList();
         state.Expenses = full.Expenses.Where(e => CanSeeExpense(viewer, e)).ToList();
         state.Goals = full.Goals.Where(g => CanSeeGoal(viewer, g)).Select(g => HideContributors(viewer, g)).ToList();
@@ -121,4 +123,7 @@ public static class Access
     }
 
     public static bool CanWrite(Person viewer) => viewer.Role == "parent";
+
+    static bool CanSeeAuthor(Person viewer, string authorId) =>
+        viewer.Role == "parent" || viewer.Id == authorId;
 }
